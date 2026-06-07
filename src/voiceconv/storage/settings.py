@@ -19,10 +19,11 @@ class AppSettings:
     platform-appropriate defaults via ``platform_support/`` at use time.
     """
 
-    device: str = "auto"        # "auto" | "cuda" | "cpu"
-    output_format: str = "wav"  # "wav" | "flac"
-    output_dir: str = ""        # empty → platform default
-    log_dir: str = ""           # empty → platform default
+    device: str = "auto"                  # "auto" | "cuda" | "cpu"
+    output_format: str = "wav"            # "wav" | "flac"
+    output_dir: str = ""                  # empty → platform default
+    log_dir: str = ""                     # empty → platform default
+    first_run_acknowledged: bool = False  # True after user affirms acceptable-use
     schema_version: int = SCHEMA_VERSION
 
 
