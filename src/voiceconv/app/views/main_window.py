@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from PySide6.QtWidgets import QApplication, QMainWindow, QTabWidget
+from PySide6.QtWidgets import QApplication, QMainWindow, QStatusBar, QTabWidget
 
 from voiceconv.app._app_state import AppState
 from voiceconv.app.view_models.convert_vm import ConvertViewModel
 from voiceconv.app.view_models.first_run_vm import FirstRunViewModel
+from voiceconv.platform_support.device import detect_device
 from voiceconv.app.view_models.preview_vm import PreviewViewModel
 from voiceconv.app.view_models.profile_vm import ProfileViewModel
 from voiceconv.app.views.convert_view import ConvertView
@@ -36,6 +37,14 @@ class MainWindow(QMainWindow):
         self._tabs.addTab(self._convert_view, "Convert")
         self._tabs.addTab(self._preview_view, "Preview && Export")
         self.setCentralWidget(self._tabs)
+
+        # Status bar — device info shown once at startup
+        info = detect_device()
+        if info["device"] == "cuda":
+            status_text = f"GPU: {info['note']}  ({info['vram_mb']} MB VRAM)"
+        else:
+            status_text = f"Device: CPU — {info['note']}"
+        self.statusBar().showMessage(status_text)
 
         # Refresh profiles when Convert tab is focused
         self._tabs.currentChanged.connect(self._on_tab_changed)
