@@ -16,8 +16,13 @@ Each phase assumes the previous phase's **exit criteria** are met.
 
 | Phase | Doc | Focus | Status |
 |---|---|---|---|
-| 0 | [phase-0-model-selection.md](phase-0-model-selection.md) | Zero-shot VC model bake-off; default engine = OpenVoice V2, FreeVC alternative, seed-VC deferred (GPLv3) | Complete (recommendation) |
-| 1 | [phase-1-mvp.md](phase-1-mvp.md) | Core engine + worker boundary, audio pipeline, single-job convert (GUI + headless), consent gate, offline self-check | Not started |
+| 0 | [phase-0-model-selection.md](phase-0-model-selection.md) | Zero-shot VC model bake-off; default engine = OpenVoice V2, FreeVC alternative, seed-VC deferred (GPLv3) | **Complete** |
+| 1 / M1 | [phase-1-mvp.md](phase-1-mvp.md) | `VoiceConversionEngine` ABC, worker subprocess, IPC (stdio + shared memory), mock engine, 29 tests passing | **Complete** (2026-06-07) |
+| 1 / M2 | [phase-1-mvp.md](phase-1-mvp.md) | Audio pipeline: ffmpeg decode → float32 PCM → chunk → encode; resampling; loudness normalize | Not started |
+| 1 / M3 | [phase-1-mvp.md](phase-1-mvp.md) | Headless conversion path: source file + reference → output, with progress + cancel | Not started |
+| 1 / M4 | [phase-1-mvp.md](phase-1-mvp.md) | Storage + consent: versioned profile schema, consent record, settings store, SQLite | Not started |
+| 1 / M5 | [phase-1-mvp.md](phase-1-mvp.md) | GUI MVP (PySide6): first-run probe, profile creation (consent gate), convert, A/B preview, export | Not started |
+| 1 / M6 | [phase-1-mvp.md](phase-1-mvp.md) | Offline + integration hardening: self-check, GPU + CPU end-to-end, responsiveness on long files | Not started |
 | 2 | [phase-2-queue-and-management.md](phase-2-queue-and-management.md) | Batch queue, profile library UI, settings, diagnostics bundle, accessibility | Not started |
 | 3 | [phase-3-safeguards-and-provenance.md](phase-3-safeguards-and-provenance.md) | Consent-record finalization, output provenance, acceptable-use guidance, watermark evaluation, offline hardening | Not started |
 | 4 | [phase-4-packaging-and-beta.md](phase-4-packaging-and-beta.md) | Embedded-Python bundle, install-time weight fetch, Inno Setup installer, hardening, clean-VM beta | Not started |
