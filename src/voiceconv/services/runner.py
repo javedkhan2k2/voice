@@ -5,8 +5,6 @@ from __future__ import annotations
 import logging
 import threading
 import time
-import wave
-from pathlib import Path
 from typing import Callable, Optional
 
 import numpy as np
@@ -16,23 +14,12 @@ from voiceconv.inference.engine import (
     CancelToken,
     VoiceConversionEngine,
 )
+from voiceconv.services._audio_encoder import AudioEncoder, StdlibWavEncoder
 from voiceconv.services._pcm_loader import PcmLoader
 from voiceconv.services.job import ConversionRequest, Job, JobStatus
 from voiceconv.services.queue import JobQueue
 
 log = logging.getLogger(__name__)
-
-
-def _write_wav(path: str, pcm: np.ndarray, sample_rate: int) -> None:
-    """Write float32 mono PCM as a 16-bit PCM WAV file."""
-    Path(path).parent.mkdir(parents=True, exist_ok=True)
-    clipped = np.clip(pcm, -1.0, 1.0)
-    int16 = (clipped * 32767.0).astype(np.int16)
-    with wave.open(path, "wb") as wf:
-        wf.setnchannels(1)
-        wf.setsampwidth(2)
-        wf.setframerate(sample_rate)
-        wf.writeframes(int16.tobytes())
 
 
 class QueueRunner:
@@ -62,12 +49,14 @@ class QueueRunner:
         queue: JobQueue,
         pcm_loader: PcmLoader,
         *,
+        audio_encoder: Optional[AudioEncoder] = None,
         on_progress: Optional[Callable[[str, float], None]] = None,
         on_status: Optional[Callable[[str, JobStatus], None]] = None,
     ) -> None:
         self._engine = engine
         self._queue = queue
         self._pcm_loader = pcm_loader
+        self._audio_encoder: AudioEncoder = audio_encoder or StdlibWavEncoder()
         self._on_progress = on_progress
         self._on_status = on_status
 
@@ -194,10 +183,10 @@ class QueueRunner:
                 progress=self._make_progress_cb(job),
                 cancel_token=cancel_token,
             )
-            _write_wav(
-                job.request.output_path,
+            self._audio_encoder.encode(
                 out,
                 job.request.params.target_sample_rate,
+                job.request.output_path,
             )
             job.transition(JobStatus.DONE)
             job.finished_at = time.time()
