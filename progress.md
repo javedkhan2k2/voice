@@ -33,7 +33,7 @@ Tracks what is done, what is in progress, and what is next across all phases.
 ---
 
 ## Phase 1 — MVP
-**Status: M1 complete; M2–M6 not started**
+**Status: M1–M2 complete; M3–M6 not started**
 
 ### Milestone M1 — Core engine + worker boundary
 **Status: Complete**
@@ -99,11 +99,33 @@ Tracks what is done, what is in progress, and what is next across all phases.
 ---
 
 ### Milestone M2 — Audio pipeline
-**Status: Not started**
+**Status: Complete**
+**Date completed: 2026-06-07**
+**Tests: 16/16 new (88/88 total)**
+**Branch: merged to main**
 
-Planned scope: ffmpeg-backed decode (WAV/FLAC/MP3/M4A/OGG) → float32 PCM → chunking →
-encode (WAV/FLAC); resampling; optional loudness normalization.
-Replaces `StdlibWavLoader` in `services/` with a proper `FfmpegLoader`.
+#### What was built
+
+| File | Description |
+|---|---|
+| `src/voiceconv/platform_support/ffmpeg.py` | `get_ffmpeg_path()` — checks `VOICECONV_FFMPEG_PATH` env var then PATH; single OS-specific shim for binary location |
+| `src/voiceconv/audio/_codec.py` | `FfmpegLoader` (pipe decode to float32 mono PCM; optional `-ar` resample baked at construction); `FfmpegEncoder` (pipe encode to WAV/FLAC inferred from extension); `_probe_sample_rate` (ffprobe → ffmpeg stderr fallback) |
+| `src/voiceconv/audio/_normalize.py` | `rms_normalize(pcm, target_rms=0.1)` — numpy-only, no-op on silence; EBU R128 two-pass deferred |
+| `src/voiceconv/audio/__init__.py` | Exports `FfmpegLoader`, `FfmpegEncoder`, `rms_normalize` |
+| `src/voiceconv/services/_audio_encoder.py` | `AudioEncoder` protocol; `StdlibWavEncoder` fallback (replaces `_write_wav` in runner) |
+| `src/voiceconv/services/runner.py` | `audio_encoder` param added (mirrors `pcm_loader`); `_write_wav` removed; defaults to `StdlibWavEncoder` — all 72 prior tests unchanged |
+| `tests/audio/test_codec.py` | 9 tests (skipped if ffmpeg unavailable); round-trip decode→encode, resample, FLAC output, bad-path error |
+| `tests/audio/test_normalize.py` | 7 tests (numpy-only, always run); RMS target, silence, float32 output |
+
+#### Architectural decisions locked in Phase 1 M2
+| Decision | Choice | Notes |
+|---|---|---|
+| Decode strategy | ffmpeg pipe (stdout) | No temp files; clean on process death |
+| Encode strategy | ffmpeg pipe (stdin) | ffmpeg writes proper container headers; format inferred from extension |
+| Resampling | ffmpeg `-ar` flag, baked into `FfmpegLoader` at construction | No extra Python dep (scipy/librosa/soxr); ffmpeg handles it |
+| Loudness normalize | RMS only (numpy) | Simple, zero deps; EBU R128 two-pass deferred to M3/later |
+| `AudioEncoder` injection | Optional; defaults to `StdlibWavEncoder` | Mirrors `PcmLoader` pattern; no breaking change to any existing test |
+| ffmpeg binary location | `VOICECONV_FFMPEG_PATH` env var → `shutil.which("ffmpeg")` → error | Configurable; tests can override without touching PATH |
 
 Depends on: M1 complete ✓
 
