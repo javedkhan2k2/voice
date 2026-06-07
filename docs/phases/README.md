@@ -19,7 +19,7 @@ Each phase assumes the previous phase's **exit criteria** are met.
 | 0 | [phase-0-model-selection.md](phase-0-model-selection.md) | Zero-shot VC model bake-off; default engine = OpenVoice V2, FreeVC alternative, seed-VC deferred (GPLv3) | **Complete** |
 | 1 / M1 | [phase-1-mvp.md](phase-1-mvp.md) | `VoiceConversionEngine` ABC, worker subprocess, IPC (stdio + shared memory), mock engine, 29 tests passing | **Complete** (2026-06-07) |
 | 1 / M2 | [phase-1-mvp.md](phase-1-mvp.md) | Audio pipeline: `FfmpegLoader` (pipe decode, resample), `FfmpegEncoder` (pipe encode, WAV/FLAC), `rms_normalize`, `AudioEncoder` protocol, `get_ffmpeg_path()`; 16 tests | **Complete** (2026-06-07) |
-| 1 / M3 | [phase-1-mvp.md](phase-1-mvp.md) | Headless conversion path: source file + reference → output, with progress + cancel | Not started |
+| 1 / M3 | [phase-1-mvp.md](phase-1-mvp.md) | Headless conversion path: `Converter` class — `prepare_profile(ref)` + `convert_file(src, profile, params, out)`; cancel + VRAM release; profile reuse; 7 tests | **Complete** (2026-06-07) |
 | 1 / M4 | [phase-1-mvp.md](phase-1-mvp.md) | Storage + consent: versioned profile schema, consent record, settings store, SQLite | Not started |
 | 1 / M5 | [phase-1-mvp.md](phase-1-mvp.md) | GUI MVP (PySide6): first-run probe, profile creation (consent gate), convert, A/B preview, export | Not started |
 | 1 / M6 | [phase-1-mvp.md](phase-1-mvp.md) | Offline + integration hardening: self-check, GPU + CPU end-to-end, responsiveness on long files | Not started |

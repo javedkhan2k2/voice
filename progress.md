@@ -33,7 +33,7 @@ Tracks what is done, what is in progress, and what is next across all phases.
 ---
 
 ## Phase 1 — MVP
-**Status: M1–M2 complete; M3–M6 not started**
+**Status: M1–M3 complete; M4–M6 not started**
 
 ### Milestone M1 — Core engine + worker boundary
 **Status: Complete**
@@ -132,13 +132,35 @@ Depends on: M1 complete ✓
 ---
 
 ### Milestone M3 — Headless conversion path
-**Status: Not started**
+**Status: Complete**
+**Date completed: 2026-06-07**
+**Tests: 7/7 new (95/95 total)**
+**Branch: merged to main**
 
-Planned scope: one headless call `source_file + reference → output_file` with progress
-callbacks and mid-job cancel that releases VRAM. Wires audio pipeline + queue engine
-end-to-end without the GUI.
+#### What was built
 
-Depends on: M2
+| File | Description |
+|---|---|
+| `src/voiceconv/services/converter.py` | `Converter` class — `prepare_profile(reference_path) -> ProfileArtifacts` and `convert_file(source, profile, params, output, progress, cancel_token)`; stateless, no queue |
+| `tests/services/test_converter.py` | 7 integration tests using `WorkerAdapter("mock")` + `_MockPcmLoader` + `StdlibWavEncoder` |
+
+#### API
+
+```python
+conv = Converter(engine, pcm_loader, audio_encoder)
+profile = conv.prepare_profile("reference.wav")   # reusable across calls
+conv.convert_file("source.wav", profile, params, "output.wav",
+                  progress=cb, cancel_token=token)
+```
+
+#### Architectural decisions locked in Phase 1 M3
+| Decision | Choice | Notes |
+|---|---|---|
+| Two methods vs one combined | `prepare_profile` + `convert_file` separate | Profile is reusable across multiple source files without re-processing |
+| VRAM release on cancel | Caller's responsibility | `convert_file` re-raises `CancelledError`; caller calls `engine.release()` if desired |
+| State | None | `Converter` holds no per-call state; safe to call from any thread |
+
+Depends on: M2 ✓
 
 ---
 
