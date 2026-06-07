@@ -81,7 +81,11 @@ class QueueViewModel(QObject):
             self.error.emit("Selected profile could not be loaded.")
             return
 
-        params = ConvertParams(target_sample_rate=_DEFAULT_SR)
+        params = ConvertParams(
+            target_sample_rate=_DEFAULT_SR,
+            device=self._state.settings.device,
+            extra={"loudness_normalize": self._state.settings.loudness_normalize},
+        )
         for path in paths:
             output_path = self._suggest_output(path)
             request = ConversionRequest(

@@ -106,7 +106,11 @@ class ConvertViewModel(QObject):
             return
         self._lock_held = True
 
-        params = ConvertParams(target_sample_rate=_DEFAULT_SR)
+        params = ConvertParams(
+            target_sample_rate=_DEFAULT_SR,
+            device=self._state.settings.device,
+            extra={"loudness_normalize": self._state.settings.loudness_normalize},
+        )
         worker = ConvertWorker(
             self._state.converter,
             self._source_path,

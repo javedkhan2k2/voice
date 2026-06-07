@@ -9,19 +9,25 @@ from voiceconv.app._queue_bridge import QueueBridge
 from voiceconv.app.view_models.convert_vm import ConvertViewModel
 from voiceconv.app.view_models.first_run_vm import FirstRunViewModel
 from voiceconv.app.view_models.preview_vm import PreviewViewModel
+from voiceconv.app.view_models.profile_library_vm import ProfileLibraryViewModel
 from voiceconv.app.view_models.profile_vm import ProfileViewModel
 from voiceconv.app.view_models.queue_vm import QueueViewModel
+from voiceconv.app.view_models.settings_vm import SettingsViewModel
 from voiceconv.app.views.convert_view import ConvertView
 from voiceconv.app.views.first_run_dialog import FirstRunDialog
 from voiceconv.app.views.preview_view import PreviewView
+from voiceconv.app.views.profile_library_view import ProfileLibraryView
 from voiceconv.app.views.profile_view import ProfileView
 from voiceconv.app.views.queue_view import QueueView
+from voiceconv.app.views.settings_view import SettingsView
 from voiceconv.platform_support.device import detect_device
 
-_TAB_PROFILE = 0
-_TAB_CONVERT = 1
-_TAB_PREVIEW = 2
-_TAB_QUEUE   = 3
+_TAB_PROFILE   = 0
+_TAB_CONVERT   = 1
+_TAB_PREVIEW   = 2
+_TAB_QUEUE     = 3
+_TAB_LIBRARY   = 4
+_TAB_SETTINGS  = 5
 
 
 class MainWindow(QMainWindow):
@@ -29,24 +35,30 @@ class MainWindow(QMainWindow):
         super().__init__()
         self._state = state
         self.setWindowTitle("VoiceBuilder")
-        self.resize(800, 540)
+        self.resize(900, 560)
 
-        self._first_run_vm = FirstRunViewModel(state.settings, state.settings_store)
-        self._profile_vm = ProfileViewModel(state)
-        self._convert_vm = ConvertViewModel(state)
-        self._preview_vm = PreviewViewModel()
-        self._queue_vm = QueueViewModel(state, bridge)
+        self._first_run_vm  = FirstRunViewModel(state.settings, state.settings_store)
+        self._profile_vm    = ProfileViewModel(state)
+        self._convert_vm    = ConvertViewModel(state)
+        self._preview_vm    = PreviewViewModel()
+        self._queue_vm      = QueueViewModel(state, bridge)
+        self._library_vm    = ProfileLibraryViewModel(state)
+        self._settings_vm   = SettingsViewModel(state)
 
-        self._tabs = QTabWidget()
-        self._profile_view = ProfileView(self._profile_vm)
-        self._convert_view = ConvertView(state, self._convert_vm)
-        self._preview_view = PreviewView(self._preview_vm)
-        self._queue_view = QueueView(self._queue_vm)
+        self._tabs          = QTabWidget()
+        self._profile_view  = ProfileView(self._profile_vm)
+        self._convert_view  = ConvertView(state, self._convert_vm)
+        self._preview_view  = PreviewView(self._preview_vm)
+        self._queue_view    = QueueView(self._queue_vm)
+        self._library_view  = ProfileLibraryView(self._library_vm)
+        self._settings_view = SettingsView(self._settings_vm)
 
-        self._tabs.addTab(self._profile_view, "Create Profile")
-        self._tabs.addTab(self._convert_view, "Convert")
-        self._tabs.addTab(self._preview_view, "Preview && Export")
-        self._tabs.addTab(self._queue_view, "Queue")
+        self._tabs.addTab(self._profile_view,  "Create Profile")
+        self._tabs.addTab(self._convert_view,  "Convert")
+        self._tabs.addTab(self._preview_view,  "Preview && Export")
+        self._tabs.addTab(self._queue_view,    "Queue")
+        self._tabs.addTab(self._library_view,  "Profile Library")
+        self._tabs.addTab(self._settings_view, "Settings")
         self.setCentralWidget(self._tabs)
 
         # Status bar — device info shown once at startup
@@ -80,6 +92,8 @@ class MainWindow(QMainWindow):
             self._convert_view.refresh_profiles()
         elif index == _TAB_QUEUE:
             self._queue_view.refresh_profiles()
+        elif index == _TAB_LIBRARY:
+            self._library_view.refresh()
 
     def _on_conversion_done(self, output_path: str) -> None:
         self._preview_vm.set_paths(self._convert_vm.source_path, output_path)

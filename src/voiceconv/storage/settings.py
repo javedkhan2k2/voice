@@ -21,9 +21,12 @@ class AppSettings:
 
     device: str = "auto"                  # "auto" | "cuda" | "cpu"
     output_format: str = "wav"            # "wav" | "flac"
-    output_dir: str = ""                  # empty → platform default
+    output_dir: str = ""                  # empty → source file's folder
     log_dir: str = ""                     # empty → platform default
     first_run_acknowledged: bool = False  # True after user affirms acceptable-use
+    loudness_normalize: bool = True       # normalise output via ConvertParams.extra
+    log_level: str = "INFO"              # "DEBUG" | "INFO" | "WARNING" | "ERROR"
+    active_engine: str = "mock"          # "mock" | "openvoice-v2" | "freevc" (restart)
     schema_version: int = SCHEMA_VERSION
 
 
