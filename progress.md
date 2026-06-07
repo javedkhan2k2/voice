@@ -33,7 +33,7 @@ Tracks what is done, what is in progress, and what is next across all phases.
 ---
 
 ## Phase 1 — MVP
-**Status: M1–M3 complete; M4–M6 not started**
+**Status: M1–M4 complete; M5–M6 not started**
 
 ### Milestone M1 — Core engine + worker boundary
 **Status: Complete**
@@ -165,11 +165,36 @@ Depends on: M2 ✓
 ---
 
 ### Milestone M4 — Storage + consent
-**Status: Not started**
+**Status: Complete**
+**Date completed: 2026-06-07**
+**Tests: 24/24 new (119/119 total)**
+**Branch: merged to main**
 
-Planned scope: versioned profile schema, consent record persisted on creation, settings
-store, local rotating logs. Storage backend leaning SQLite. Replaces
-`JsonFileJobRepository` with `SqliteJobRepository`.
+#### What was built
+
+| File | Description |
+|---|---|
+| `src/voiceconv/storage/profile.py` | `ConsentRecord` (immutable, `create()` requires non-empty statement); `VoiceProfile` (frozen, `consent` is structurally required — no code path to create a profile without one); `ProfileRepository` ABC; `JsonFileProfileRepository` (atomic JSON write, corrupt-file skip on `list_all`) |
+| `src/voiceconv/storage/settings.py` | `AppSettings` dataclass (device, output_format, output_dir, log_dir, schema_version); `SettingsStore` (atomic JSON, defaults on missing file, unknown-key forward-compat, missing-key backward-compat) |
+| `src/voiceconv/storage/logging_setup.py` | `setup_logging(log_dir, level, max_bytes, backup_count)` — `RotatingFileHandler`, idempotent on same directory, does not call `basicConfig` (pytest-safe) |
+| `src/voiceconv/storage/__init__.py` | Exports all public types |
+| `tests/storage/test_profile.py` | 15 tests — consent/profile creation, empty-name/statement guards, UUID uniqueness, save/load round-trip, list, delete, corrupt-skip, schema_version, binary data |
+| `tests/storage/test_settings.py` | 6 tests — defaults, round-trip, single-field update, unknown-key forward-compat, schema_version, atomic write |
+| `tests/storage/test_logging_setup.py` | 3 tests — file created, message appears, double-call idempotent |
+
+#### Consent gate enforcement
+
+`VoiceProfile` is `frozen=True` and its `create()` factory requires a `ConsentRecord`.
+`ConsentRecord.create()` rejects empty statements. There is no code path that produces
+a `VoiceProfile` without a persisted, non-empty consent statement.
+
+#### Architectural decisions locked in Phase 1 M4
+| Decision | Choice | Notes |
+|---|---|---|
+| Storage backend | JSON files (atomic tmp+rename) | Consistent with `JsonFileJobRepository`; SQLite migration deferred |
+| Consent enforcement | Structural (frozen dataclass, required field) | Not just documentation — the type system prevents bypassing |
+| Settings compat | Forward-compat (unknown keys ignored) + backward-compat (missing keys → defaults) | Safe to add/remove fields in future schema versions |
+| Logging | `RotatingFileHandler` on root logger, no `basicConfig` | pytest-safe; does not swallow test output |
 
 Depends on: M1 ✓ (parallelizable with M5 once M3 is done)
 
