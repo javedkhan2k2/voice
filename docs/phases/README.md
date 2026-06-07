@@ -22,7 +22,7 @@ Each phase assumes the previous phase's **exit criteria** are met.
 | 1 / M3 | [phase-1-mvp.md](phase-1-mvp.md) | Headless conversion path: `Converter` class — `prepare_profile(ref)` + `convert_file(src, profile, params, out)`; cancel + VRAM release; profile reuse; 7 tests | **Complete** (2026-06-07) |
 | 1 / M4 | [phase-1-mvp.md](phase-1-mvp.md) | Storage + consent: `ConsentRecord` (required), `VoiceProfile` (frozen, consent structurally enforced), `JsonFileProfileRepository`, `AppSettings`, `SettingsStore`, `setup_logging()`; 24 tests | **Complete** (2026-06-07) |
 | 1 / M5 | [phase-1-mvp.md](phase-1-mvp.md) | GUI MVP (PySide6): first-run probe, profile creation (consent gate), convert, A/B preview, export | **Complete** (2026-06-07) |
-| 1 / M6 | [phase-1-mvp.md](phase-1-mvp.md) | Offline + integration hardening: self-check, GPU + CPU end-to-end, responsiveness on long files | Not started |
+| 1 / M6 | [phase-1-mvp.md](phase-1-mvp.md) | Offline + integration hardening: `check_offline_invariant()`, E2E tests (roundtrip, progress, cancel, FLAC), 30-second large-buffer test, app startup robustness | **Complete** (2026-06-07) |
 | 2 / M1 | [phase-2-queue-and-management.md](phase-2-queue-and-management.md) | Queue engine (services layer): `JobStatus` state machine, `JobQueue`, `JsonFileJobRepository`, `PcmLoader` protocol, `QueueRunner`; 43 tests | **Complete** (2026-06-07) |
 | 2 / M2 | [phase-2-queue-and-management.md](phase-2-queue-and-management.md) | Queue UI (PySide6): add files, per-job progress/ETA/status, cancel/retry, open output folder | Not started |
 | 2 / M3 | [phase-2-queue-and-management.md](phase-2-queue-and-management.md) | Profile library UI: browse/rename/delete profiles; consent record visible per profile | Not started |

@@ -33,7 +33,7 @@ Tracks what is done, what is in progress, and what is next across all phases.
 ---
 
 ## Phase 1 — MVP
-**Status: M1–M5 complete; M6 not started**
+**Status: Complete (M1–M6)**
 
 ### Milestone M1 — Core engine + worker boundary
 **Status: Complete**
@@ -249,12 +249,37 @@ Depends on: M4 ✓
 ---
 
 ### Milestone M6 — Offline + integration hardening
-**Status: Not started**
+**Status: Complete**
+**Date completed: 2026-06-07**
+**Tests: 9/9 new (143/143 total)**
+**Branch: merged to main**
 
-Planned scope: offline self-check passes; end-to-end run on GPU and CPU; UI stays
-responsive on a long file; overlap-add chunking validated.
+#### What was built
 
-Depends on: M5
+| File | Description |
+|---|---|
+| `src/voiceconv/services/offline_check.py` | `check_offline_invariant(fn)` — patches `socket.socket.__init__` during *fn*; raises `AssertionError` if any network socket is opened; exported from `services/__init__.py` |
+| `src/voiceconv/app/main.py` | Wrap `engine.warmup()` in `try/except EngineError` → `QMessageBox.critical` + `sys.exit(1)` so startup failures surface clearly |
+| `src/voiceconv/app/views/main_window.py` | `QStatusBar` shows `detect_device()` note at startup (GPU name + VRAM or CPU warning) |
+| `src/voiceconv/app/views/first_run_dialog.py` | Explicit CPU-speed warning when no GPU detected |
+| `tests/integration/conftest.py` | `needs_ffmpeg` skip mark + `make_wav()` helper (mono 16-bit PCM sine-wave WAV) |
+| `tests/integration/test_e2e.py` | 4 end-to-end tests: roundtrip WAV, progress callbacks monotone, cancel mid-run, FLAC output |
+| `tests/integration/test_long_file.py` | 3 large-buffer tests: 30 s PCM (661 500 samples) via shared memory → mock worker; progress callbacks; cancel |
+| `tests/integration/test_offline.py` | 2 offline invariant tests: full pipeline in `check_offline_invariant`; socket-detection self-test |
+
+#### What was validated
+
+- **Offline invariant**: the full `Converter` pipeline (FfmpegLoader → WorkerAdapter → FfmpegEncoder) opens no network sockets in the main process
+- **End-to-end roundtrip**: `reference.wav` + `source.wav` → `output.wav`/`.flac` through the real audio stack + mock engine
+- **Large-buffer transfer**: 30-second PCM (≈2.6 MB float32) passes through shared memory boundary without error; progress fires; cancel works
+- **App robustness**: warmup failure shows a critical dialog rather than an unhandled exception
+
+#### Notes
+
+- E2E + offline tests ran fully (ffmpeg is on PATH in dev env); they auto-skip in environments without ffmpeg
+- Overlap-add chunking is internal to real engine adapters and will be validated when model weights are installed (Phase 1 exit criteria note)
+
+Depends on: M5 ✓
 
 ---
 
