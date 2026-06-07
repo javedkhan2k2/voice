@@ -32,6 +32,47 @@ Tracks what is done, what is in progress, and what is next across all phases.
 
 ---
 
+## Phase 2 — Queue and Management
+**Status: M1 complete; M2–M6 not started**
+
+### Milestone M1 — Queue engine (services layer)
+**Status: Complete**
+**Date completed: 2026-06-07**
+**Tests: 43/43 passing (72/72 total)**
+**Branch: `phase-2-m1-queue-engine`**
+
+#### What was built
+
+| File | Description |
+|---|---|
+| `src/voiceconv/services/job.py` | `JobStatus` enum; `ConversionRequest` (frozen DC); `Job` (mutable DC) with `transition()` enforcing the state machine |
+| `src/voiceconv/services/_pcm_loader.py` | `PcmLoader` protocol; `StdlibWavLoader` (stdlib `wave`; 8/16/24/32-bit; mono downmix) |
+| `src/voiceconv/services/_repository.py` | `JobRepository` ABC; `JsonFileJobRepository` (atomic write via tmp+rename; `RUNNING → QUEUED` on reload) |
+| `src/voiceconv/services/queue.py` | `JobQueue` — thread-safe ordered list backed by a `JobRepository` |
+| `src/voiceconv/services/runner.py` | `QueueRunner` — background thread drains the queue; per-job `CancelToken`; `on_progress` / `on_status` callbacks; retry re-enqueues same `job_id` (attempt++) |
+| `tests/services/test_job.py` | 12 state machine unit tests |
+| `tests/services/test_queue.py` | 16 queue + repository unit tests (incl. persist + restore) |
+| `tests/services/test_runner.py` | 15 integration tests using `WorkerAdapter("mock")` — real subprocess, no GPU |
+
+#### State machine
+```
+QUEUED → RUNNING → DONE
+                 → CANCELLED
+                 → FAILED → QUEUED (retry, attempt++)
+QUEUED → CANCELLED → QUEUED (retry)
+```
+`DONE` is terminal (no retry). `RUNNING` jobs persisted at crash time are reloaded as `QUEUED`.
+
+#### Architectural decisions locked in Phase 2 M1
+| Decision | Choice | Notes |
+|---|---|---|
+| PCM loader | `PcmLoader` protocol injected at construction | Swap `StdlibWavLoader` → `FfmpegLoader` in Phase 1 M2 without touching runner |
+| Persistence format | `JsonFileJobRepository` (one file per job, atomic write) | `JobRepository` ABC; `SqliteJobRepository` deferred to Phase 1 M4 |
+| Retry semantics | Same `job_id`, `attempt++`, re-enqueue | History preserved; simpler than new job_id |
+| Output write | `wave` stdlib (16-bit PCM WAV) | Replaced by ffmpeg encode in Phase 1 M2 |
+
+---
+
 ## Phase 1 — MVP
 **Status: M1 complete; M2–M6 not started**
 
