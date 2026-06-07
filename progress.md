@@ -33,7 +33,7 @@ Tracks what is done, what is in progress, and what is next across all phases.
 ---
 
 ## Phase 1 — MVP
-**Status: M1–M4 complete; M5–M6 not started**
+**Status: M1–M5 complete; M6 not started**
 
 ### Milestone M1 — Core engine + worker boundary
 **Status: Complete**
@@ -201,12 +201,50 @@ Depends on: M1 ✓ (parallelizable with M5 once M3 is done)
 ---
 
 ### Milestone M5 — GUI MVP (PySide6)
-**Status: Not started**
+**Status: Complete**
+**Date completed: 2026-06-07**
+**Tests: 15/15 new (134/134 total)**
+**Branch: merged to main**
 
-Planned scope: first-run hardware probe + acceptable-use acknowledgement; create-profile
-flow with consent gate; convert; progress bar; A/B preview; export.
+#### What was built
 
-Depends on: M4
+| File | Description |
+|---|---|
+| `src/voiceconv/__main__.py` | `python -m voiceconv` entry point |
+| `src/voiceconv/platform_support/_app_paths.py` | `get_app_data_dir()` — resolves `%APPDATA%\voiceconv` |
+| `src/voiceconv/platform_support/device.py` | `detect_device()` — PyTorch CUDA probe with `ImportError` fallback |
+| `src/voiceconv/storage/settings.py` | Added `first_run_acknowledged: bool = False` to `AppSettings` (backward-compat) |
+| `src/voiceconv/app/_app_state.py` | `AppState` dataclass — single DI container passed to all view-models |
+| `src/voiceconv/app/_workers.py` | `PrepareProfileWorker` + `ConvertWorker` (QObject on QThread; cancel via `CancelToken`) |
+| `src/voiceconv/app/main.py` | Bootstrap — `QApplication`, `AppState` construction, `MainWindow` launch, `engine.release()` on exit |
+| `src/voiceconv/app/view_models/first_run_vm.py` | Device info, ack state, persists `first_run_acknowledged` via `SettingsStore` |
+| `src/voiceconv/app/view_models/profile_vm.py` | Reference clip, name, consent gate; `create_profile()` launches `PrepareProfileWorker` |
+| `src/voiceconv/app/view_models/convert_vm.py` | Source/output paths, profile selection, progress float, `is_running`, cancel; auto-suggests output path from source stem |
+| `src/voiceconv/app/view_models/preview_vm.py` | `play_source()` / `play_output()` via `os.startfile`; `export_to()` via `shutil.copy2` |
+| `src/voiceconv/app/views/first_run_dialog.py` | Device info label + acceptable-use text + affirm checkbox + Continue/Exit buttons |
+| `src/voiceconv/app/views/profile_view.py` | Reference file picker, name field, consent checkbox, Create button, status label |
+| `src/voiceconv/app/views/convert_view.py` | Source picker, profile `QComboBox`, output picker, `QProgressBar`, Convert/Cancel buttons |
+| `src/voiceconv/app/views/preview_view.py` | Play Source / Play Output buttons + Export/Save As dialog |
+| `src/voiceconv/app/views/main_window.py` | `QMainWindow` + `QTabWidget` (Create Profile / Convert / Preview & Export); first-run as modal `QDialog` |
+| `tests/app/conftest.py` | Session-scoped `QApplication` singleton fixture (headless) |
+| `tests/app/test_first_run_vm.py` | 3 tests — `detect_device()` keys, ack persistence, `needs_first_run` flag |
+| `tests/app/test_profile_vm.py` | 6 tests — consent/name/path guards, success saves profile, `is_busy` flip |
+| `tests/app/test_convert_vm.py` | 6 tests — source/profile guards, output path suggestion, done signal, `is_running` reset, cancel |
+
+#### Architectural decisions locked in Phase 1 M5
+
+| Decision | Choice | Notes |
+|---|---|---|
+| Converter vs QueueRunner | `Converter` directly | M5 is single-job; `QueueRunner` is for Phase 2 batch UI |
+| Thread pattern | `QObject` worker + `QThread` | Proper signal/slot lifecycle; explicit cancel/cleanup |
+| Navigation | First-run as `QDialog` (blocking); main as `QTabWidget` | Ack must be affirmed before entering the app |
+| A/B preview | `os.startfile(path)` | No custom audio widget; system default player |
+| Engine in M5 | `WorkerAdapter("mock")` | Real model weights deferred to after M6 |
+| App data dir | `%APPDATA%\voiceconv` via `platform_support._app_paths` | OS-standard; no extra dependency |
+
+Depends on: M4 ✓
+
+---
 
 ---
 
