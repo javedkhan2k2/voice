@@ -1,0 +1,33 @@
+# Minimal project metadata for the v1 voice-conversion app.
+# Dependency versions, build backend, and tooling are intentionally NOT pinned yet — see TODOs.
+
+[project]
+name = "voiceconv"                # TODO: confirm final distribution name
+version = "0.0.0"
+description = "Offline audio-to-target-voice conversion desktop app (Windows 11 v1)."
+requires-python = ">=3.10"        # TODO: confirm Python version against PySide6 + PyTorch/CUDA support
+license = { text = "TODO" }       # TODO: choose project license (must be compatible with bundled model)
+readme = "CLAUDE.md"
+
+# TODO: declare dependencies once selected. Candidates (do NOT treat as final, versions TBD):
+#   - PySide6            (GUI)
+#   - torch / torchaudio (inference; CUDA + CPU builds)
+#   - soundfile          (audio I/O)
+#   - ffmpeg             (bundled binary, not a pip dep — TODO: bundling mechanism)
+dependencies = []                 # TODO
+
+[project.optional-dependencies]
+# TODO: define dev/test extras (test runner not yet selected).
+dev = []
+
+# TODO: select and configure a build backend (e.g. setuptools/hatchling) before first build.
+# [build-system]
+# requires = ["TODO"]
+# build-backend = "TODO"
+
+# Source layout: package lives under src/voiceconv (src layout).
+# TODO: add tool configuration (build backend src-dir, lint/format/test) when tooling is chosen.
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths  = ["tests"]

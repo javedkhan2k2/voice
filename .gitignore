@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+
+# Test / type / lint caches (tools TBD)
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+Thumbs.db
+desktop.ini
+
+# Project-local runtime artifacts (none are committed)
+# Model weights, fetched runtimes, user audio, profiles, and logs must never be committed.
+models/
+weights/
+*.wav
+*.flac
+*.mp3
+*.m4a
+*.ogg
+*.opus
+logs/
+*.log
