@@ -23,7 +23,12 @@ Each phase assumes the previous phase's **exit criteria** are met.
 | 1 / M4 | [phase-1-mvp.md](phase-1-mvp.md) | Storage + consent: versioned profile schema, consent record, settings store, SQLite | Not started |
 | 1 / M5 | [phase-1-mvp.md](phase-1-mvp.md) | GUI MVP (PySide6): first-run probe, profile creation (consent gate), convert, A/B preview, export | Not started |
 | 1 / M6 | [phase-1-mvp.md](phase-1-mvp.md) | Offline + integration hardening: self-check, GPU + CPU end-to-end, responsiveness on long files | Not started |
-| 2 | [phase-2-queue-and-management.md](phase-2-queue-and-management.md) | Batch queue, profile library UI, settings, diagnostics bundle, accessibility | Not started |
+| 2 / M1 | [phase-2-queue-and-management.md](phase-2-queue-and-management.md) | Queue engine (services layer): `JobStatus` state machine, `JobQueue`, `JsonFileJobRepository`, `PcmLoader` protocol, `QueueRunner`; 43 tests | **Complete** (2026-06-07) |
+| 2 / M2 | [phase-2-queue-and-management.md](phase-2-queue-and-management.md) | Queue UI (PySide6): add files, per-job progress/ETA/status, cancel/retry, open output folder | Not started |
+| 2 / M3 | [phase-2-queue-and-management.md](phase-2-queue-and-management.md) | Profile library UI: browse/rename/delete profiles; consent record visible per profile | Not started |
+| 2 / M4 | [phase-2-queue-and-management.md](phase-2-queue-and-management.md) | Settings UI + persistence: `SettingsStore`; engine/device switch; storage-location migration | Not started |
+| 2 / M5 | [phase-2-queue-and-management.md](phase-2-queue-and-management.md) | Diagnostics: rotating logs; one-click diagnostics-bundle export (excludes audio) | Not started |
+| 2 / M6 | [phase-2-queue-and-management.md](phase-2-queue-and-management.md) | Accessibility pass: keyboard nav, screen-reader labels, high-DPI/contrast, no color-only status cues | Not started |
 | 3 | [phase-3-safeguards-and-provenance.md](phase-3-safeguards-and-provenance.md) | Consent-record finalization, output provenance, acceptable-use guidance, watermark evaluation, offline hardening | Not started |
 | 4 | [phase-4-packaging-and-beta.md](phase-4-packaging-and-beta.md) | Embedded-Python bundle, install-time weight fetch, Inno Setup installer, hardening, clean-VM beta | Not started |
 
