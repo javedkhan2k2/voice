@@ -9,12 +9,22 @@ from PySide6.QtWidgets import QApplication
 from voiceconv.app._app_state import AppState
 from voiceconv.app.views.main_window import MainWindow
 from voiceconv.audio._codec import FfmpegEncoder, FfmpegLoader
+from voiceconv.inference.engine import EngineError
 from voiceconv.inference.worker_adapter import WorkerAdapter
 from voiceconv.platform_support._app_paths import get_app_data_dir
 from voiceconv.services.converter import Converter
 from voiceconv.storage.logging_setup import setup_logging
 from voiceconv.storage.profile import JsonFileProfileRepository
 from voiceconv.storage.settings import SettingsStore
+
+
+def _show_fatal(message: str) -> None:
+    from PySide6.QtWidgets import QMessageBox
+    box = QMessageBox()
+    box.setWindowTitle("VoiceBuilder — Fatal Error")
+    box.setIcon(QMessageBox.Icon.Critical)
+    box.setText(message)
+    box.exec()
 
 
 def main() -> None:
@@ -27,7 +37,13 @@ def main() -> None:
     setup_logging(data_dir / "logs")
 
     engine = WorkerAdapter("mock")
-    engine.warmup()
+    try:
+        engine.warmup()
+    except EngineError as exc:
+        _show_fatal(
+            f"The voice engine failed to start.\n\n{exc}\n\nCode: {exc.code}"
+        )
+        sys.exit(1)
 
     converter = Converter(
         engine,

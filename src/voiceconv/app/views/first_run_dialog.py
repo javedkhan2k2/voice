@@ -42,7 +42,11 @@ class FirstRunDialog(QDialog):
         if info["device"] == "cuda":
             device_text = f"GPU detected: {info['note']} ({info['vram_mb']} MB VRAM)"
         else:
-            device_text = f"No GPU detected — {info['note']}. Conversions will run on CPU (slower)."
+            device_text = (
+                f"No GPU detected — {info['note']}.\n"
+                "Warning: Conversions will run on CPU, which is significantly "
+                "slower than GPU. Expect longer processing times."
+            )
         device_label = QLabel(device_text)
         device_label.setWordWrap(True)
         layout.addWidget(device_label)
