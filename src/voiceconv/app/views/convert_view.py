@@ -96,6 +96,7 @@ class ConvertView(QWidget):
         self._vm.output_path_changed.connect(self._on_output_path_changed)
         self._vm.progress_changed.connect(self._on_progress)
         self._vm.is_running_changed.connect(self._on_running_changed)
+        self._vm.engine_busy_changed.connect(self._on_engine_busy)
         self._vm.error.connect(self._on_error)
 
     def refresh_profiles(self) -> None:
@@ -133,9 +134,14 @@ class ConvertView(QWidget):
         self._progress_bar.setValue(int(value * 100))
 
     def _on_running_changed(self, running: bool) -> None:
-        self._convert_btn.setEnabled(not running)
+        self._convert_btn.setEnabled(not running and not self._vm._engine_busy)
         self._cancel_btn.setVisible(running)
         self._status_label.setText("Converting…" if running else "")
+
+    def _on_engine_busy(self, busy: bool) -> None:
+        if not self._vm.is_running:
+            self._convert_btn.setEnabled(not busy)
+            self._status_label.setText("Engine busy (queue is processing)…" if busy else "")
 
     def _on_error(self, msg: str) -> None:
         QMessageBox.warning(self, "Convert", msg)

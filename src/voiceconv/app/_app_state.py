@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import threading
+from dataclasses import dataclass, field
 
 from voiceconv.inference.engine import VoiceConversionEngine
 from voiceconv.services.converter import Converter
+from voiceconv.services.queue import JobQueue
+from voiceconv.services.runner import QueueRunner
 from voiceconv.storage.profile import JsonFileProfileRepository
 from voiceconv.storage.settings import AppSettings, SettingsStore
 
@@ -19,3 +22,7 @@ class AppState:
     settings_store: SettingsStore
     settings: AppSettings
     engine: VoiceConversionEngine
+    # Added in Phase 2 M2:
+    queue: JobQueue = field(default=None)   # type: ignore[assignment]
+    runner: QueueRunner = field(default=None)   # type: ignore[assignment]
+    engine_lock: threading.Lock = field(default_factory=threading.Lock)

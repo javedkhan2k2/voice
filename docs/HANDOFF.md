@@ -1,67 +1,64 @@
-# Session Handoff
+This session continues voicebuilder development. Read docs/phases/README.md
+and docs/phases/phase-2-queue-and-management.md before starting.
 
-Copy the prompt below to start a fresh session (any model) and continue this project. The new session has
-no memory of prior work — the prompt points it at the docs, which are the source of truth.
+## Current state
+- Branch: phase-2-m2-queue-ui (M2 + M3 + M4 all on this branch)
+- Phase 0 complete: model selection (OpenVoice V2 default, FreeVC alternative)
+- Phase 1 complete (M1–M6): 100 tests
+- Phase 2 M1 complete: Queue engine (services) — 43 tests
+- Phase 2 M2 complete: Queue UI — QueueBridge, QueueViewModel, QueueView,
+  engine-lock serialisation — 13 tests
+- Phase 2 M3 complete: Profile Library UI — ProfileLibraryViewModel,
+  ProfileLibraryView — 11 tests
+- Phase 2 M4 complete: Settings UI — SettingsViewModel, SettingsView,
+  AppSettings extended, ConvertParams wired to device+loudness — 9 tests
+- Total: 176/176 tests passing
+- Dev env: Python 3.13.5, .venv/, numpy 2.4.6, pytest 9.0.3, PySide6 installed
+- Run tests: .venv\Scripts\python -m pytest -v
+- Run app:   $env:PYTHONPATH = "src"; .venv\Scripts\python -m voiceconv
 
----
+## Key APIs
 
-```
-You are continuing work on an existing project. Repository root: E:\Projects\voicebuilder
-(Windows 11, PowerShell). The repo currently contains documentation and an empty scaffold only —
-no implementation code yet.
+### Services layer
+- services/job.py: JobStatus, Job, ConversionRequest
+- services/queue.py: JobQueue
+- services/runner.py: QueueRunner — submit/cancel/retry
+- services/converter.py: Converter — single-shot
 
-START BY READING THESE, IN ORDER:
-- CLAUDE.md                                   (stack, constraints, rules — authoritative)
-- docs/spec.md                                (v1 product spec)
-- docs/architecture.md                        (module boundaries, refactor-risk flags)
-- docs/phases/README.md                       (phase index + dependency order + open decisions)
-- docs/phases/phase-0-model-selection.md      (model decision)
-- docs/phases/phase-1-mvp.md                  (the work to do next)
+### Storage
+- storage/settings.py: AppSettings (device, output_format, output_dir, log_dir,
+  first_run_acknowledged, loudness_normalize, log_level, active_engine),
+  SettingsStore — atomic save/load with forward/back compat
+- storage/profile.py: VoiceProfile (frozen, artifacts embedded), JsonFileProfileRepository
 
-PROJECT IN ONE LINE:
-A Windows 11 desktop GUI app that converts a source speech recording into a target person's voice
-(audio-to-audio voice conversion — NOT TTS, NOT transcription).
+### App layer (tabs in order)
+- Tab 0  Create Profile  — ProfileViewModel / ProfileView
+- Tab 1  Convert         — ConvertViewModel / ConvertView (engine_lock, device+loudness in params)
+- Tab 2  Preview & Export— PreviewViewModel / PreviewView
+- Tab 3  Queue           — QueueViewModel / QueueView (device+loudness in params)
+- Tab 4  Profile Library — ProfileLibraryViewModel / ProfileLibraryView
+- Tab 5  Settings        — SettingsViewModel / SettingsView
 
-LOCKED DECISIONS (do not relitigate without flagging):
-- Stack: Python; PySide6/Qt GUI; PyTorch inference in an ISOLATED WORKER PROCESS.
-- Mode: batch (file in → file out), v1; pipeline must stay streaming-friendly for future real-time.
-- Voice profiles: zero-shot from a short reference clip (no per-voice training in v1).
-- Inference: strictly local/offline at RUNTIME (weights may be fetched once at install time).
-- Hardware: NVIDIA GPU preferred, CPU fallback must complete.
-- Default model: OpenVoice V2 (MIT code+weights); FreeVC as the alternative behind the engine adapter;
-  seed-VC deferred (GPLv3 blocks proprietary bundling).
-- Mandatory safeguards: consent gate on profile creation, NO silent recording, output provenance,
-  offline-runtime invariant. These are non-negotiable product requirements.
+- app/_app_state.py: AppState — converter, profile_repo, settings_store, settings,
+  engine, queue, runner, engine_lock
+- app/_queue_bridge.py: QueueBridge — runner thread → Qt signals
+- app/main.py: _LockedQueueRunner; runner started after warmup
 
-KEY OPEN DECISIONS (carried across phases — surface them, don't silently assume):
-- The app's OWN license (open-source vs proprietary) — gates whether seed-VC is reconsidered, the
-  dependency license audit, and code-signing.
-- Provenance depth: metadata-only vs + inaudible watermark.
-- IPC transport + PCM payload mechanism for the GUI↔worker boundary.
-- Python/PyTorch/CUDA pinned versions; test runner; profile/queue storage backend (leaning SQLite).
+### Settings VM key behaviours
+- All setters mutate state.settings in-place and call settings_store.save() immediately
+- set_output_dir: blocked (error signal) if runner has a RUNNING job
+- set_log_level: also calls logging.getLogger().setLevel() for immediate effect
+- active_engine saved but requires app restart to take effect
 
-WORKING RULES:
-- Where a command, package, version, or model detail isn't finalized, write `TODO` — do NOT guess.
-- Do not collapse the GUI/inference process boundary; the GUI must never import models directly.
-- Keep the core (services/audio/storage/engine-interface) OS-agnostic; OS specifics go in
-  src/voiceconv/platform_support/.
-- Update the relevant doc in the same change that alters behavior.
+## Mandatory safeguards (non-negotiable)
+- No silent recording; consent gate on profile creation; offline-runtime invariant;
+  output provenance; GUI never imports models/audio backends directly;
+  all heavy work off UI thread.
 
-YOUR TASK THIS SESSION — Phase 1, Milestone M1 (see docs/phases/phase-1-mvp.md):
-Design and define the `VoiceConversionEngine` interface and the inference worker-process boundary
-(IPC transport, message contract, PCM payload mechanism, lifecycle: warmup/convert/prepare_profile/
-release, cancellation, progress). Include the M1 listening-test A/B plan (OpenVoice V2 vs FreeVC).
-
-Start in PLAN MODE: propose the interface, the worker boundary design, and the file tree you intend to
-create BEFORE writing any code. Ask me clarifying questions only where a decision is genuinely
-load-bearing and underconstrained. Do not write implementation code until the plan is approved.
-```
-
----
-
-## Notes
-
-- The "YOUR TASK" block targets **Phase 1 / M1** (engine interface + worker boundary) — the natural entry
-  point and the riskiest architectural seam. Swap that block to redirect the next session.
-- Current repo state at handoff: documentation + empty scaffold; no implementation code. See
-  [phases/README.md](phases/README.md) for phase status.
+## Next task: Phase 2 M5 — Diagnostics
+See docs/phases/phase-2-queue-and-management.md for scope:
+- Rotating logs (already wired via setup_logging — verify rotation config)
+- One-click diagnostics bundle export: logs + hardware/model versions, NO audio
+- Bundle assembler tested to assert zero audio files in output
+- A new "Export Diagnostics…" button, likely in the Settings tab or a dialog
+- Unit test: assert diagnostics bundle contains no audio extensions

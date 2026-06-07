@@ -22,6 +22,7 @@ class ConvertViewModel(QObject):
     profile_changed = Signal(object)
     progress_changed = Signal(float)
     is_running_changed = Signal(bool)
+    engine_busy_changed = Signal(bool)  # True when queue runner holds engine
     conversion_done = Signal(str)  # output_path
     error = Signal(str)
 
@@ -33,6 +34,8 @@ class ConvertViewModel(QObject):
         self._profile_artifacts: ProfileArtifacts | None = None
         self._progress = 0.0
         self._is_running = False
+        self._engine_busy = False  # set by QueueBridge.runner_busy_changed
+        self._lock_held = False    # True when this VM holds engine_lock
         self._thread: QThread | None = None
         self._worker: ConvertWorker | None = None
 
@@ -74,6 +77,16 @@ class ConvertViewModel(QObject):
         return self._is_running
 
     # ------------------------------------------------------------------
+    # Engine-busy coordination (connected from QueueBridge)
+    # ------------------------------------------------------------------
+
+    def set_engine_busy(self, busy: bool) -> None:
+        """Called when QueueRunner starts or finishes a job."""
+        if self._engine_busy != busy:
+            self._engine_busy = busy
+            self.engine_busy_changed.emit(busy)
+
+    # ------------------------------------------------------------------
     # Commands
     # ------------------------------------------------------------------
 
@@ -88,7 +101,16 @@ class ConvertViewModel(QObject):
             self.error.emit("Please set an output path.")
             return
 
-        params = ConvertParams(target_sample_rate=_DEFAULT_SR)
+        if not self._state.engine_lock.acquire(blocking=False):
+            self.error.emit("Engine is busy — a queue job is running.")
+            return
+        self._lock_held = True
+
+        params = ConvertParams(
+            target_sample_rate=_DEFAULT_SR,
+            device=self._state.settings.device,
+            extra={"loudness_normalize": self._state.settings.loudness_normalize},
+        )
         worker = ConvertWorker(
             self._state.converter,
             self._source_path,
@@ -124,6 +146,11 @@ class ConvertViewModel(QObject):
     # Internal
     # ------------------------------------------------------------------
 
+    def _release_engine_lock(self) -> None:
+        if self._lock_held:
+            self._state.engine_lock.release()
+            self._lock_held = False
+
     def _auto_suggest_output(self) -> None:
         if not self._source_path:
             return
@@ -137,16 +164,19 @@ class ConvertViewModel(QObject):
         self._set_progress(value)
 
     def _on_finished(self, output_path: str) -> None:
+        self._release_engine_lock()
         self._set_progress(1.0)
         self._set_running(False)
         log.info("Conversion complete: %s", output_path)
         self.conversion_done.emit(output_path)
 
     def _on_error(self, msg: str) -> None:
+        self._release_engine_lock()
         self._set_running(False)
         self.error.emit(msg)
 
     def _on_cancelled(self) -> None:
+        self._release_engine_lock()
         self._set_running(False)
         self._set_progress(0.0)
 
