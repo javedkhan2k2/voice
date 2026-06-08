@@ -50,6 +50,7 @@ class SettingsView(QWidget):
 
         self._device_combo = QComboBox()
         self._device_combo.addItems(_DEVICES)
+        self._device_combo.setAccessibleName("Compute device")
         conv_form.addRow("Device:", self._device_combo)
 
         engine_row = QWidget()
@@ -58,6 +59,10 @@ class SettingsView(QWidget):
         engine_layout.setSpacing(2)
         self._engine_combo = QComboBox()
         self._engine_combo.addItems(_ENGINES)
+        self._engine_combo.setAccessibleName("Active conversion engine")
+        self._engine_combo.setAccessibleDescription(
+            "Engine changes apply on next launch"
+        )
         engine_layout.addWidget(self._engine_combo)
         engine_note = QLabel("Engine changes apply on next launch.")
         engine_note.setStyleSheet("color: gray; font-size: 10px;")
@@ -66,9 +71,11 @@ class SettingsView(QWidget):
 
         self._format_combo = QComboBox()
         self._format_combo.addItems([f.upper() for f in _FORMATS])
+        self._format_combo.setAccessibleName("Output audio format")
         conv_form.addRow("Output format:", self._format_combo)
 
         self._loudness_cb = QCheckBox("Normalise output loudness")
+        self._loudness_cb.setAccessibleName("Normalise output loudness")
         conv_form.addRow("Loudness:", self._loudness_cb)
 
         root.addWidget(conv_box)
@@ -83,8 +90,10 @@ class SettingsView(QWidget):
         dir_layout.setContentsMargins(0, 0, 0, 0)
         self._dir_edit = QLineEdit()
         self._dir_edit.setPlaceholderText("(blank = source file's folder)")
+        self._dir_edit.setAccessibleName("Output folder path")
         dir_layout.addWidget(self._dir_edit)
-        browse_btn = QPushButton("Browse…")
+        browse_btn = QPushButton("&Browse…")
+        browse_btn.setAccessibleName("Browse for output folder")
         browse_btn.clicked.connect(self._browse_output_dir)
         dir_layout.addWidget(browse_btn)
         storage_form.addRow("Output folder:", dir_row)
@@ -98,9 +107,11 @@ class SettingsView(QWidget):
 
         self._log_level_combo = QComboBox()
         self._log_level_combo.addItems(_LOG_LEVELS)
+        self._log_level_combo.setAccessibleName("Log level")
         diag_form.addRow("Log level:", self._log_level_combo)
 
-        self._export_btn = QPushButton("Export Diagnostics…")
+        self._export_btn = QPushButton("Export &Diagnostics…")
+        self._export_btn.setAccessibleName("Export diagnostics bundle")
         self._export_btn.setToolTip(
             "Save a ZIP of logs and environment info (no audio) for support."
         )

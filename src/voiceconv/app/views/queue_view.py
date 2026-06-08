@@ -32,13 +32,19 @@ _COL_PROGRESS = 2
 _COL_ELAPSED = 3
 _COL_ACTION = 4
 
+# Darkened to meet WCAG AA contrast on the default light table background.
+# Status is *also* conveyed by the cell text (never colour alone).
 _STATUS_COLORS: dict[JobStatus, str] = {
-    JobStatus.QUEUED: "#888888",
-    JobStatus.RUNNING: "#0070c0",
-    JobStatus.DONE: "#107c10",
-    JobStatus.CANCELLED: "#ca5010",
-    JobStatus.FAILED: "#d13438",
+    JobStatus.QUEUED: "#5c5c5c",
+    JobStatus.RUNNING: "#005a9e",
+    JobStatus.DONE: "#0b6a0b",
+    JobStatus.CANCELLED: "#a23c0a",
+    JobStatus.FAILED: "#b3261e",
 }
+
+
+def _basename(path: str) -> str:
+    return path.split("\\")[-1].split("/")[-1]
 
 
 class QueueView(QWidget):
@@ -67,17 +73,22 @@ class QueueView(QWidget):
         tb_layout = QHBoxLayout(toolbar)
         tb_layout.setContentsMargins(0, 0, 0, 0)
 
-        tb_layout.addWidget(QLabel("Profile:"))
+        profile_label = QLabel("&Profile:")
+        tb_layout.addWidget(profile_label)
         self._profile_combo = QComboBox()
         self._profile_combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
+        self._profile_combo.setAccessibleName("Conversion profile")
+        profile_label.setBuddy(self._profile_combo)
         self._profile_combo.currentIndexChanged.connect(self._on_profile_selected)
         tb_layout.addWidget(self._profile_combo)
 
-        self._add_btn = QPushButton("Add Files…")
+        self._add_btn = QPushButton("&Add Files…")
+        self._add_btn.setAccessibleName("Add source files to the queue")
         self._add_btn.clicked.connect(self._browse_files)
         tb_layout.addWidget(self._add_btn)
 
-        self._clear_btn = QPushButton("Clear Done")
+        self._clear_btn = QPushButton("Clear &Done")
+        self._clear_btn.setAccessibleName("Clear completed jobs from the queue")
         self._clear_btn.clicked.connect(self._vm.clear_done)
         tb_layout.addWidget(self._clear_btn)
 
@@ -103,10 +114,15 @@ class QueueView(QWidget):
         self._table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self._table.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
         self._table.verticalHeader().setVisible(False)
+        self._table.setAccessibleName("Conversion job queue")
+        self._table.setAccessibleDescription(
+            "List of queued conversions with status, progress and actions"
+        )
         root.addWidget(self._table)
 
         # Status bar label
         self._status_label = QLabel("")
+        self._status_label.setAccessibleName("Queue status")
         root.addWidget(self._status_label)
 
     def _connect_vm(self) -> None:
@@ -163,8 +179,10 @@ class QueueView(QWidget):
         self._table.insertRow(row)
         self._job_row[job.job_id] = row
 
+        filename = _basename(job.request.source_path)
+
         # File name
-        file_item = QTableWidgetItem(job.request.source_path.split("\\")[-1].split("/")[-1])
+        file_item = QTableWidgetItem(filename)
         file_item.setData(Qt.ItemDataRole.UserRole, job.job_id)
         file_item.setToolTip(job.request.source_path)
         self._table.setItem(row, _COL_FILE, file_item)
@@ -177,6 +195,7 @@ class QueueView(QWidget):
         bar.setRange(0, 100)
         bar.setValue(int(job.progress * 100))
         bar.setTextVisible(True)
+        bar.setAccessibleName(f"Conversion progress for {filename}")
         self._table.setCellWidget(row, _COL_PROGRESS, bar)
 
         # Elapsed
@@ -213,21 +232,28 @@ class QueueView(QWidget):
             self._table.setItem(row, _COL_ACTION, QTableWidgetItem(""))
 
     def _make_status_item(self, status: JobStatus) -> QTableWidgetItem:
+        # Status is carried by text (screen-reader friendly); colour is a
+        # secondary cue only, never the sole indicator.
         item = QTableWidgetItem(status.value.upper())
         item.setForeground(QBrush(QColor(_STATUS_COLORS.get(status, "#000000"))))
+        item.setToolTip(f"Status: {status.value}")
         return item
 
     def _make_action_btn(self, job: Job) -> QPushButton | None:
+        filename = _basename(job.request.source_path)
         if job.status in (JobStatus.QUEUED, JobStatus.RUNNING):
             btn = QPushButton("Cancel")
+            btn.setAccessibleName(f"Cancel conversion of {filename}")
             btn.clicked.connect(lambda: self._vm.cancel_job(job.job_id))
             return btn
         if job.status in (JobStatus.FAILED, JobStatus.CANCELLED):
             btn = QPushButton("Retry")
+            btn.setAccessibleName(f"Retry conversion of {filename}")
             btn.clicked.connect(lambda: self._vm.retry_job(job.job_id))
             return btn
         if job.status == JobStatus.DONE:
             btn = QPushButton("Open Folder")
+            btn.setAccessibleName(f"Open output folder for {filename}")
             btn.clicked.connect(lambda: self._vm.open_output_folder(job.job_id))
             return btn
         return None

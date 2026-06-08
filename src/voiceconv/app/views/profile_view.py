@@ -37,7 +37,9 @@ class ProfileView(QWidget):
         self._ref_edit = QLineEdit()
         self._ref_edit.setPlaceholderText("Path to reference audio clip…")
         self._ref_edit.setReadOnly(True)
-        ref_browse = QPushButton("Browse…")
+        self._ref_edit.setAccessibleName("Reference clip path")
+        ref_browse = QPushButton("&Browse…")
+        ref_browse.setAccessibleName("Browse for reference clip")
         ref_browse.clicked.connect(self._browse_reference)
         ref_layout.addWidget(self._ref_edit)
         ref_layout.addWidget(ref_browse)
@@ -46,6 +48,7 @@ class ProfileView(QWidget):
         # Profile name
         self._name_edit = QLineEdit()
         self._name_edit.setPlaceholderText("e.g. Alice")
+        self._name_edit.setAccessibleName("Profile name")
         self._name_edit.textChanged.connect(self._vm.set_name)
         form.addRow("Profile name:", self._name_edit)
 
@@ -54,19 +57,22 @@ class ProfileView(QWidget):
             "I confirm I own or have explicit permission to use this voice,\n"
             "and accept full responsibility for any use of the generated output."
         )
+        self._consent_cb.setAccessibleName("Consent affirmation")
         self._consent_cb.stateChanged.connect(
             lambda s: self._vm.set_consent_affirmed(bool(s))
         )
         form.addRow("", self._consent_cb)
 
         # Create button
-        self._create_btn = QPushButton("Create Profile")
+        self._create_btn = QPushButton("Create &Profile")
+        self._create_btn.setAccessibleName("Create voice profile")
         self._create_btn.clicked.connect(self._vm.create_profile)
         form.addRow("", self._create_btn)
 
         # Status label
         self._status_label = QLabel("")
         self._status_label.setWordWrap(True)
+        self._status_label.setAccessibleName("Profile creation status")
         form.addRow("", self._status_label)
 
     def _connect_vm(self) -> None:

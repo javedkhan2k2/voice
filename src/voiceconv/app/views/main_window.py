@@ -46,6 +46,7 @@ class MainWindow(QMainWindow):
         self._settings_vm   = SettingsViewModel(state)
 
         self._tabs          = QTabWidget()
+        self._tabs.setAccessibleName("Main sections")
         self._profile_view  = ProfileView(self._profile_vm)
         self._convert_view  = ConvertView(state, self._convert_vm)
         self._preview_view  = PreviewView(self._preview_vm)

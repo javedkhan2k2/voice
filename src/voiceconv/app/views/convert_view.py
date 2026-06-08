@@ -43,7 +43,9 @@ class ConvertView(QWidget):
         self._src_edit = QLineEdit()
         self._src_edit.setPlaceholderText("Path to source speech file…")
         self._src_edit.setReadOnly(True)
-        src_browse = QPushButton("Browse…")
+        self._src_edit.setAccessibleName("Source file path")
+        src_browse = QPushButton("&Browse…")
+        src_browse.setAccessibleName("Browse for source audio file")
         src_browse.clicked.connect(self._browse_source)
         src_layout.addWidget(self._src_edit)
         src_layout.addWidget(src_browse)
@@ -51,6 +53,7 @@ class ConvertView(QWidget):
 
         # Profile selector
         self._profile_combo = QComboBox()
+        self._profile_combo.setAccessibleName("Voice profile")
         self._profile_combo.currentIndexChanged.connect(self._on_profile_selected)
         form.addRow("Voice profile:", self._profile_combo)
 
@@ -60,8 +63,10 @@ class ConvertView(QWidget):
         out_layout.setContentsMargins(0, 0, 0, 0)
         self._out_edit = QLineEdit()
         self._out_edit.setPlaceholderText("Output file path…")
+        self._out_edit.setAccessibleName("Output file path")
         self._out_edit.textChanged.connect(self._vm.set_output_path)
-        out_browse = QPushButton("Browse…")
+        out_browse = QPushButton("Bro&wse…")
+        out_browse.setAccessibleName("Browse for output file location")
         out_browse.clicked.connect(self._browse_output)
         out_layout.addWidget(self._out_edit)
         out_layout.addWidget(out_browse)
@@ -71,15 +76,19 @@ class ConvertView(QWidget):
         self._progress_bar = QProgressBar()
         self._progress_bar.setRange(0, 100)
         self._progress_bar.setValue(0)
+        self._progress_bar.setFormat("%p%")
+        self._progress_bar.setAccessibleName("Conversion progress")
         form.addRow("Progress:", self._progress_bar)
 
         # Buttons row
         btn_row = QWidget()
         btn_layout = QHBoxLayout(btn_row)
         btn_layout.setContentsMargins(0, 0, 0, 0)
-        self._convert_btn = QPushButton("Convert")
+        self._convert_btn = QPushButton("&Convert")
+        self._convert_btn.setAccessibleName("Start conversion")
         self._convert_btn.clicked.connect(self._vm.start_convert)
-        self._cancel_btn = QPushButton("Cancel")
+        self._cancel_btn = QPushButton("Ca&ncel")
+        self._cancel_btn.setAccessibleName("Cancel conversion")
         self._cancel_btn.clicked.connect(self._vm.cancel)
         self._cancel_btn.setVisible(False)
         btn_layout.addWidget(self._convert_btn)
@@ -90,6 +99,7 @@ class ConvertView(QWidget):
         # Status label
         self._status_label = QLabel("")
         self._status_label.setWordWrap(True)
+        self._status_label.setAccessibleName("Conversion status")
         form.addRow("", self._status_label)
 
     def _connect_vm(self) -> None:
