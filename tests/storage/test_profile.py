@@ -4,11 +4,15 @@ import json
 
 import pytest
 
+from voiceconv import __version__
 from voiceconv.inference.engine import ProfileArtifacts
 from voiceconv.storage.profile import (
+    CONSENT_SCHEMA_VERSION,
     ConsentRecord,
     JsonFileProfileRepository,
     VoiceProfile,
+    _dict_to_profile,
+    _profile_to_dict,
 )
 
 
@@ -54,6 +58,102 @@ def test_consent_empty_statement_raises():
 
 def test_two_consent_records_unique_ids():
     assert ConsentRecord.create("x").record_id != ConsentRecord.create("x").record_id
+
+
+def test_consent_create_defaults_app_version_and_schema():
+    c = ConsentRecord.create("I affirm.")
+    assert c.app_version == __version__
+    assert c.consent_schema_version == CONSENT_SCHEMA_VERSION
+    assert c.profile_id == ""  # not bound until VoiceProfile.create
+
+
+# ---------------------------------------------------------------------------
+# Consent record finalization (Phase 3 M1)
+# ---------------------------------------------------------------------------
+
+
+def test_profile_create_binds_consent_to_profile_id():
+    p = _profile("Alice")
+    # The persisted consent must reference the profile it belongs to.
+    assert p.consent.profile_id == p.profile_id
+
+
+def test_consent_profile_id_rebound_even_if_caller_sets_wrong_one():
+    consent = ConsentRecord.create("stmt", profile_id="some-other-id")
+    p = VoiceProfile.create("Bob", _artifacts(), consent)
+    assert p.consent.profile_id == p.profile_id  # caller value overridden
+
+
+def test_consent_new_fields_roundtrip(tmp_path):
+    repo = JsonFileProfileRepository(tmp_path)
+    p = _profile("Carol")
+    repo.save(p)
+    raw = json.loads((tmp_path / f"{p.profile_id}.json").read_text())
+    consent = raw["consent"]
+    assert consent["profile_id"] == p.profile_id
+    assert consent["app_version"] == __version__
+    assert consent["consent_schema_version"] == CONSENT_SCHEMA_VERSION
+
+    loaded = repo.load(p.profile_id)
+    assert loaded.consent.profile_id == p.profile_id
+    assert loaded.consent.app_version == __version__
+
+
+def test_legacy_consent_without_new_fields_loads(tmp_path):
+    """Back-compat: a profile written before M1 (no profile_id/app_version/
+    schema in the consent block) must still load."""
+    repo = JsonFileProfileRepository(tmp_path)
+    p = _profile("Legacy")
+    d = _profile_to_dict(p)
+    d["consent"] = {
+        "record_id": p.consent.record_id,
+        "statement": p.consent.statement,
+        "affirmed_at": p.consent.affirmed_at,
+        "affirmed_by": p.consent.affirmed_by,
+    }
+    (tmp_path / f"{p.profile_id}.json").write_text(json.dumps(d))
+
+    loaded = repo.load(p.profile_id)
+    assert loaded is not None
+    assert loaded.consent.app_version == "unknown"
+    assert loaded.consent.profile_id == p.profile_id  # falls back to profile id
+
+
+# ---------------------------------------------------------------------------
+# Enforcement audit — no profile without a consent record
+# ---------------------------------------------------------------------------
+
+
+def test_voice_profile_requires_consent_argument():
+    with pytest.raises(TypeError):
+        VoiceProfile.create("NoConsent", _artifacts())  # type: ignore[call-arg]
+
+
+def test_dict_to_profile_rejects_missing_consent():
+    p = _profile()
+    d = _profile_to_dict(p)
+    del d["consent"]
+    with pytest.raises(ValueError, match="consent"):
+        _dict_to_profile(d)
+
+
+def test_dict_to_profile_rejects_empty_consent_statement():
+    p = _profile()
+    d = _profile_to_dict(p)
+    d["consent"]["statement"] = "   "
+    with pytest.raises(ValueError, match="consent"):
+        _dict_to_profile(d)
+
+
+def test_load_blocks_consentless_profile_file(tmp_path):
+    """A tampered profile file with no consent block must not load."""
+    repo = JsonFileProfileRepository(tmp_path)
+    p = _profile()
+    d = _profile_to_dict(p)
+    del d["consent"]
+    (tmp_path / f"{p.profile_id}.json").write_text(json.dumps(d))
+    assert repo.load(p.profile_id) is None
+    assert repo.list_all() == []  # skipped, not surfaced
 
 
 # ---------------------------------------------------------------------------

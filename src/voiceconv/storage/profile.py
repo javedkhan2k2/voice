@@ -11,13 +11,15 @@ import json
 import time
 import uuid
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Optional
 
+from voiceconv import __version__
 from voiceconv.inference.engine import ProfileArtifacts
 
 SCHEMA_VERSION = 1
+CONSENT_SCHEMA_VERSION = 1
 
 _CONSENT_STATEMENT = (
     "I confirm that I own or have explicit permission to use this voice, "
@@ -34,20 +36,31 @@ _CONSENT_STATEMENT = (
 class ConsentRecord:
     """Immutable record of user consent for a voice profile.
 
-    Must be created via :meth:`create` so the timestamp and ID are set
-    by this module rather than supplied by the caller.
+    Versioned schema (``consent_schema_version``) capturing the four fields the
+    spec requires: *timestamp* (``affirmed_at``), *acknowledgement text*
+    (``statement``), *profile id* (``profile_id``), and *app version*
+    (``app_version``).  See ``docs/consent.md``.
+
+    Must be created via :meth:`create` so the timestamp, ID, and app version are
+    set by this module rather than supplied by the caller.  ``profile_id`` is
+    bound by :meth:`VoiceProfile.create` so it always matches the owning profile.
     """
 
     record_id: str
     statement: str
     affirmed_at: float
     affirmed_by: str
+    profile_id: str = ""
+    app_version: str = __version__
+    consent_schema_version: int = CONSENT_SCHEMA_VERSION
 
     @classmethod
     def create(
         cls,
         statement: str = _CONSENT_STATEMENT,
         affirmed_by: str = "user",
+        profile_id: str = "",
+        app_version: str = __version__,
     ) -> "ConsentRecord":
         if not statement.strip():
             raise ValueError("consent statement must not be empty")
@@ -56,6 +69,9 @@ class ConsentRecord:
             statement=statement,
             affirmed_at=time.time(),
             affirmed_by=affirmed_by,
+            profile_id=profile_id,
+            app_version=app_version,
+            consent_schema_version=CONSENT_SCHEMA_VERSION,
         )
 
 
@@ -88,11 +104,15 @@ class VoiceProfile:
     ) -> "VoiceProfile":
         if not name.strip():
             raise ValueError("profile name must not be empty")
+        profile_id = uuid.uuid4().hex
+        # Bind the consent to this profile so the persisted record always
+        # references the profile it belongs to (single point of truth).
+        bound_consent = replace(consent, profile_id=profile_id)
         return cls(
-            profile_id=uuid.uuid4().hex,
+            profile_id=profile_id,
             name=name,
             artifacts=artifacts,
-            consent=consent,
+            consent=bound_consent,
             created_at=time.time(),
         )
 
@@ -179,19 +199,27 @@ def _profile_to_dict(p: VoiceProfile) -> dict[str, Any]:
             "metadata": p.artifacts.metadata,
         },
         "consent": {
+            "consent_schema_version": p.consent.consent_schema_version,
             "record_id": p.consent.record_id,
             "statement": p.consent.statement,
             "affirmed_at": p.consent.affirmed_at,
             "affirmed_by": p.consent.affirmed_by,
+            "profile_id": p.consent.profile_id,
+            "app_version": p.consent.app_version,
         },
     }
 
 
 def _dict_to_profile(d: dict[str, Any]) -> VoiceProfile:
     a = d["artifacts"]
-    c = d["consent"]
+    c = d.get("consent")
+    # Enforcement: a profile is invalid without a consent record carrying a
+    # non-empty acknowledgement statement. Refuse to materialise one.
+    if not c or not str(c.get("statement", "")).strip():
+        raise ValueError("profile is missing a required consent record")
+    profile_id = d["profile_id"]
     return VoiceProfile(
-        profile_id=d["profile_id"],
+        profile_id=profile_id,
         name=d["name"],
         created_at=d["created_at"],
         artifacts=ProfileArtifacts(
@@ -205,5 +233,9 @@ def _dict_to_profile(d: dict[str, Any]) -> VoiceProfile:
             statement=c["statement"],
             affirmed_at=c["affirmed_at"],
             affirmed_by=c["affirmed_by"],
+            # Back-compat: legacy records predate these fields.
+            profile_id=c.get("profile_id") or profile_id,
+            app_version=c.get("app_version", "unknown"),
+            consent_schema_version=c.get("consent_schema_version", 1),
         ),
     )

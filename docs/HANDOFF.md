@@ -20,17 +20,21 @@ and docs/phases/phase-2-queue-and-management.md before starting.
   status conveyed by text; docs/accessibility.md checklist — 12 tests
 - Phase 2 COMPLETE (M1–M6). Manual a11y audit log in docs/accessibility.md
   still to be walked before Phase 2 exit sign-off.
-- Total: 201/201 tests passing
+- Phase 3 M1 complete: Consent record finalization — versioned ConsentRecord
+  (adds profile_id, app_version, consent_schema_version), bound to its profile;
+  voiceconv.__version__ = "0.1.0"; load-time enforcement (no profile without a
+  consent statement); docs/consent.md — 9 tests
+- Total: 210/210 tests passing
 - Dev env: Python 3.13.5, .venv/, numpy 2.4.6, pytest 9.0.3, PySide6 installed
 - Run tests: .venv\Scripts\python -m pytest -v
 - Run app:   $env:PYTHONPATH = "src"; .venv\Scripts\python -m voiceconv
 
-## Next: Phase 3 — Safeguards & provenance
-See docs/phases/phase-3-safeguards-and-provenance.md. Focus: consent-record
-finalization, output provenance (mark generated audio as AI voice-converted),
-acceptable-use guidance, watermark evaluation, offline hardening.
-Before starting, optionally walk the manual a11y audit log in
-docs/accessibility.md to formally close Phase 2.
+## Next: Phase 3 M2 — Output provenance metadata
+See docs/phases/phase-3-safeguards-and-provenance.md. Every exported file must
+carry a documented provenance marker in container metadata (marking it as AI
+voice-converted by this tool) that survives a normal export round-trip.
+Then M3 (acceptable-use guidance), M4 (watermark eval + decision), M5 (offline
+hardening). Manual a11y audit (docs/accessibility.md) still open from Phase 2.
 
 ## Key APIs
 
@@ -49,6 +53,11 @@ docs/accessibility.md to formally close Phase 2.
   SettingsStore — atomic save/load, forward/back compat
 - storage/profile.py: VoiceProfile (frozen, artifacts base64-embedded in JSON),
   JsonFileProfileRepository — save/load/list_all/delete
+  - ConsentRecord (frozen, versioned): record_id, statement, affirmed_at,
+    affirmed_by, profile_id, app_version, consent_schema_version. profile_id
+    bound by VoiceProfile.create; _dict_to_profile raises if consent missing/empty
+    (load enforces "no profile without consent"). Schema doc: docs/consent.md
+- voiceconv.__version__ = "0.1.0" — single source (consent + diagnostics manifest)
 - storage/logging_setup.py: setup_logging(log_dir) — call once at startup;
   RotatingFileHandler (5 MB × 3 backups) → voiceconv.log[.1/.2/.3]
 
@@ -76,18 +85,25 @@ docs/accessibility.md to formally close Phase 2.
   output provenance; GUI never imports models/audio backends directly;
   all heavy work off UI thread.
 
-## Task: Phase 3 — Safeguards & provenance
-See docs/phases/phase-3-safeguards-and-provenance.md for full scope. This is the
-first milestone after Phase 2; read the phase doc and break it into milestones.
+## Task: Phase 3, Milestone M2 — Output provenance metadata
+See docs/phases/phase-3-safeguards-and-provenance.md for full scope.
 
-Phase 3 themes:
-- Consent-record finalization (schema freeze; what's persisted, how it's shown).
-- Output provenance: mark generated audio as AI voice-converted by this tool
-  (metadata-only vs +inaudible watermark — decision opens here, see README
-  "cross-phase decisions").
-- Acceptable-use guidance / legal copy review.
-- Watermark evaluation.
-- Offline hardening (extend check_offline_invariant coverage).
+M2 scope:
+- Embed a recoverable provenance marker in every exported file's container
+  metadata, marking it AI voice-converted by this tool. Survives normal export.
+- Choose the marker per output container: WAV (RIFF INFO / bext), FLAC (Vorbis
+  comment). MP3 deferred unless an export path exists.
+- Wire into the encode path: audio/_codec.py FfmpegEncoder is where files are
+  written (ffmpeg -metadata ...). Keep it headless-testable.
+- Decide provenance depth for v1 is M4's call (watermark); M2 ships the
+  metadata baseline regardless.
+- Tests: write→read-back the metadata marker; round-trip survives re-export.
+
+Done in M1: consent schema (profile_id/app_version/consent_schema_version),
+voiceconv.__version__, load enforcement, docs/consent.md.
+
+Remaining Phase 3 after M2: M3 acceptable-use guidance, M4 watermark eval +
+decision, M5 offline-invariant hardening.
 
 ## Architecture constraints (carry forward)
 - GUI never imports models/audio backends directly; all heavy work off UI thread.
@@ -98,6 +114,7 @@ Phase 3 themes:
 - Create a new branch per milestone before starting.
 - Phase 2 leftovers: walk the manual a11y audit log in docs/accessibility.md and
   record results to formally close the Phase 2 exit criteria.
-- Diagnostics (M5) safeguard: the bundle excludes audio via name whitelist
+- Diagnostics safeguard: the bundle excludes audio via name whitelist
   (voiceconv.log*) AND extension denylist in services/diagnostics.py — keep both.
-- Start in PLAN MODE: propose milestone breakdown + module structure BEFORE code.
+- Start in PLAN MODE: propose the metadata marker format + encode-path wiring
+  BEFORE writing code.

@@ -27,6 +27,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from voiceconv import __version__
 from voiceconv.platform_support.device import detect_device
 
 MANIFEST_NAME = "manifest.json"
@@ -72,6 +73,7 @@ def collect_app_info() -> dict[str, Any]:
     """
     return {
         "tool": "VoiceBuilder",
+        "app_version": __version__,
         "schema_version": MANIFEST_SCHEMA_VERSION,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "platform": {
