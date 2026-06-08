@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -98,6 +100,13 @@ class SettingsView(QWidget):
         self._log_level_combo.addItems(_LOG_LEVELS)
         diag_form.addRow("Log level:", self._log_level_combo)
 
+        self._export_btn = QPushButton("Export Diagnostics…")
+        self._export_btn.setToolTip(
+            "Save a ZIP of logs and environment info (no audio) for support."
+        )
+        self._export_btn.clicked.connect(self._export_diagnostics)
+        diag_form.addRow("Support bundle:", self._export_btn)
+
         root.addWidget(diag_box)
         root.addStretch()
 
@@ -116,6 +125,7 @@ class SettingsView(QWidget):
         self._log_level_combo.currentTextChanged.connect(self._vm.set_log_level)
         self._vm.error.connect(self._on_error)
         self._vm.settings_changed.connect(self._load_current)
+        self._vm.export_succeeded.connect(self._on_export_succeeded)
 
     def _load_current(self) -> None:
         """Populate controls from current vm state without triggering saves."""
@@ -150,6 +160,19 @@ class SettingsView(QWidget):
             self._vm.set_output_dir(path)
             if self._vm.output_dir == path:  # accepted (not blocked)
                 self._dir_edit.setText(path)
+
+    def _export_diagnostics(self) -> None:
+        default_name = f"voicebuilder-diagnostics-{datetime.now():%Y%m%d-%H%M%S}.zip"
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Export Diagnostics", default_name, "ZIP archives (*.zip)"
+        )
+        if path:
+            self._vm.export_diagnostics(path)
+
+    def _on_export_succeeded(self, path: str) -> None:
+        QMessageBox.information(
+            self, "Diagnostics", f"Diagnostics bundle saved to:\n{path}"
+        )
 
     def _on_error(self, msg: str) -> None:
         QMessageBox.warning(self, "Settings", msg)

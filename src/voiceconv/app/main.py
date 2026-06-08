@@ -58,9 +58,10 @@ def main() -> None:
     app.setApplicationName("VoiceBuilder")
 
     data_dir = get_app_data_dir()
+    log_dir = data_dir / "logs"
     settings_store = SettingsStore(data_dir / "settings.json")
     settings = settings_store.load()
-    setup_logging(data_dir / "logs")
+    setup_logging(log_dir)
 
     engine = WorkerAdapter("mock")
     try:
@@ -105,6 +106,7 @@ def main() -> None:
         queue=queue,
         runner=runner,
         engine_lock=engine_lock,
+        log_dir=log_dir,
     )
 
     window = MainWindow(state, bridge)

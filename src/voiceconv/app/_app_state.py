@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import threading
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from voiceconv.inference.engine import VoiceConversionEngine
 from voiceconv.services.converter import Converter
@@ -26,3 +27,5 @@ class AppState:
     queue: JobQueue = field(default=None)   # type: ignore[assignment]
     runner: QueueRunner = field(default=None)   # type: ignore[assignment]
     engine_lock: threading.Lock = field(default_factory=threading.Lock)
+    # Added in Phase 2 M5 — resolved log directory for diagnostics export:
+    log_dir: Path = field(default=None)   # type: ignore[assignment]

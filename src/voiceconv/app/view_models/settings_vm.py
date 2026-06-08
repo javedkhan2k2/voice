@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 
 from PySide6.QtCore import QObject, Signal
 
 from voiceconv.app._app_state import AppState
+from voiceconv.services import diagnostics
 from voiceconv.services.job import JobStatus
 
 log = logging.getLogger(__name__)
@@ -17,6 +19,7 @@ class SettingsViewModel(QObject):
 
     settings_changed = Signal()
     error = Signal(str)
+    export_succeeded = Signal(str)  # absolute path of the written bundle
 
     def __init__(self, state: AppState, parent: QObject | None = None) -> None:
         super().__init__(parent)
@@ -84,6 +87,34 @@ class SettingsViewModel(QObject):
         numeric = getattr(logging, value.upper(), logging.INFO)
         logging.getLogger().setLevel(numeric)
         self._save()
+
+    # ------------------------------------------------------------------
+    # Diagnostics
+    # ------------------------------------------------------------------
+
+    def export_diagnostics(self, out_path: str) -> None:
+        """Assemble a diagnostics bundle (logs + environment) at *out_path*.
+
+        Bounded, fast work (logs are size-capped by rotation), so it runs
+        synchronously.  Emits :attr:`export_succeeded` on success and
+        :attr:`error` on failure.
+        """
+        if not out_path:
+            return
+        log_dir = self._state.log_dir or Path(self._state.settings.log_dir or ".")
+        try:
+            app_info = diagnostics.collect_app_info()
+            app_info["settings"] = {
+                "active_engine": self._state.settings.active_engine,
+                "device": self._state.settings.device,
+            }
+            written = diagnostics.build_bundle(Path(out_path), log_dir, app_info)
+        except Exception as exc:  # noqa: BLE001 — surface any failure to the user
+            log.exception("diagnostics export failed")
+            self.error.emit(f"Could not export diagnostics: {exc}")
+            return
+        log.info("diagnostics bundle written to %s", written)
+        self.export_succeeded.emit(str(written))
 
     # ------------------------------------------------------------------
     # Internal

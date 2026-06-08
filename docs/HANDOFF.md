@@ -12,10 +12,18 @@ and docs/phases/phase-2-queue-and-management.md before starting.
   ProfileLibraryView — 11 tests
 - Phase 2 M4 complete: Settings UI — SettingsViewModel, SettingsView,
   AppSettings extended (loudness_normalize, log_level, active_engine) — 9 tests
-- Total: 176/176 tests passing
+- Phase 2 M5 complete: Diagnostics — services/diagnostics.py
+  (collect_app_info + build_bundle), "Export Diagnostics…" in Settings tab,
+  AppState.log_dir threaded through main.py — 13 tests
+- Total: 189/189 tests passing
 - Dev env: Python 3.13.5, .venv/, numpy 2.4.6, pytest 9.0.3, PySide6 installed
 - Run tests: .venv\Scripts\python -m pytest -v
 - Run app:   $env:PYTHONPATH = "src"; .venv\Scripts\python -m voiceconv
+
+## Next milestone: Phase 2 M6 — Accessibility pass
+Keyboard navigation, screen-reader labels, high-DPI/contrast, no color-only
+status cues across all Phase 2 views (Queue, Profile Library, Settings).
+Last milestone of Phase 2.
 
 ## Key APIs
 
@@ -24,6 +32,9 @@ and docs/phases/phase-2-queue-and-management.md before starting.
 - services/queue.py: JobQueue — thread-safe
 - services/runner.py: QueueRunner — submit/cancel/retry; callbacks fire from background thread
 - services/converter.py: Converter — single-shot
+- services/diagnostics.py: collect_app_info() → env/hardware dict;
+  build_bundle(output_zip_path, log_dir, app_info) → ZIP (manifest.json +
+  logs/voiceconv.log*); audio excluded by name whitelist + extension denylist
 
 ### Storage
 - storage/settings.py: AppSettings (device, output_format, output_dir, log_dir,
@@ -31,7 +42,8 @@ and docs/phases/phase-2-queue-and-management.md before starting.
   SettingsStore — atomic save/load, forward/back compat
 - storage/profile.py: VoiceProfile (frozen, artifacts base64-embedded in JSON),
   JsonFileProfileRepository — save/load/list_all/delete
-- storage/logging_setup.py: setup_logging(log_dir) — call once at startup
+- storage/logging_setup.py: setup_logging(log_dir) — call once at startup;
+  RotatingFileHandler (5 MB × 3 backups) → voiceconv.log[.1/.2/.3]
 
 ### App layer — tabs in order
 - Tab 0  Create Profile   — ProfileViewModel / ProfileView
@@ -42,7 +54,8 @@ and docs/phases/phase-2-queue-and-management.md before starting.
 - Tab 5  Settings         — SettingsViewModel / SettingsView
 
 - app/_app_state.py: AppState (converter, profile_repo, settings_store, settings,
-  engine, queue, runner, engine_lock)
+  engine, queue, runner, engine_lock, log_dir)
+  - log_dir = data_dir/"logs" (set in main.py); used by SettingsViewModel.export_diagnostics()
 - app/_queue_bridge.py: QueueBridge(QObject) — runner thread → Qt signals
 - app/main.py: _LockedQueueRunner; runner started after engine.warmup(); bridge → MainWindow
 
@@ -56,32 +69,29 @@ and docs/phases/phase-2-queue-and-management.md before starting.
   output provenance; GUI never imports models/audio backends directly;
   all heavy work off UI thread.
 
-## Task: Phase 2, Milestone M5 — Diagnostics
-See docs/phases/phase-2-queue-and-management.md for full scope.
+## Task: Phase 2, Milestone M6 — Accessibility pass
+See docs/phases/phase-2-queue-and-management.md for full scope. Last milestone
+of Phase 2; ships the exit criteria for the phase.
 
-M5 scope:
-- Rotating logs: verify setup_logging() configures rotation; add RotatingFileHandler
-  if not already present (check storage/logging_setup.py)
-- Diagnostics bundle export: collect logs + hardware/model version info into a
-  single ZIP file; content must provably exclude audio (assert by file extension whitelist)
-- "Export Diagnostics…" button — place in the Settings tab (SettingsView) or as a
-  standalone button; triggers a save-file dialog then assembles the bundle
-- A new services/diagnostics.py (or storage/diagnostics.py) module with a
-  build_bundle(output_zip_path, log_dir, app_info) function
-- Unit test: assert bundle contains zero audio-extension files (.wav .flac .mp3 etc.)
-- Unit test: assert bundle contains at least one log file
-- Unit test: assert bundle contains a manifest/env JSON with hardware info
+M6 scope (across all Phase 2 views — Queue, Profile Library, Settings — and
+re-check the Phase 1 views):
+- Keyboard navigation: logical tab order; every action reachable without a mouse;
+  visible focus indicators; mnemonics/accelerators on buttons.
+- Screen-reader labels: accessibleName/accessibleDescription on inputs, buttons,
+  and status widgets; form labels associated with their fields.
+- High-DPI / contrast: no fixed pixel sizes that break scaling; respect system
+  contrast; verify against a high-contrast theme.
+- No color-only status cues: job status (QUEUED/RUNNING/DONE/CANCELLED/FAILED)
+  and busy states must carry text/icon, not just color.
 
-## Architecture constraints
-- Bundle assembly must be headless-testable (no Qt in the module)
-- app/ layer wires the dialog and calls the services/storage module
-- No audio data leaves the machine (bundle exclusion is asserted by test)
-- Keep offline-runtime invariant: no network calls during bundle assembly
+## Architecture constraints (carry forward)
+- GUI never imports models/audio backends directly; all heavy work off UI thread.
+- Offline-runtime invariant; consent gate; output provenance; no telemetry.
 
 ## Notes
-- Create a new branch (e.g., phase-2-m5-diagnostics) before starting
-- setup_logging() is in storage/logging_setup.py — read it before designing rotation
-- The app info dict should include: platform, Python version, installed package versions
-  (PySide6, numpy, torch if available), device info from platform_support/device.py
-- Start in PLAN MODE: propose the module structure, bundle manifest format, and
-  "Export Diagnostics" UX placement BEFORE writing any code
+- Create a new branch (e.g., phase-2-m6-accessibility) before starting.
+- Diagnostics (M5) safeguard: the bundle excludes audio via name whitelist
+  (voiceconv.log*) AND extension denylist in services/diagnostics.py — keep both
+  if you touch that module.
+- Start in PLAN MODE: propose a per-view a11y checklist and the test approach
+  (view-model labels are unit-testable; keyboard/SR walkthrough is manual).

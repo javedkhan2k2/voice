@@ -23,6 +23,9 @@ htmlcov/
 Thumbs.db
 desktop.ini
 
+# Windows reserved-name artifact from stray `> nul` redirects
+nul
+
 # Project-local runtime artifacts (none are committed)
 # Model weights, fetched runtimes, user audio, profiles, and logs must never be committed.
 models/

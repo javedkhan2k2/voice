@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import threading
+import zipfile
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -143,3 +145,63 @@ def test_settings_changed_emitted_on_setter(qapp, tmp_path):
     _pump()
 
     assert fired
+
+
+# ---------------------------------------------------------------------------
+# Diagnostics export
+# ---------------------------------------------------------------------------
+
+
+def test_export_diagnostics_writes_bundle(qapp, tmp_path):
+    state, _ = _make_state(tmp_path)
+    log_dir = tmp_path / "logs"
+    log_dir.mkdir()
+    (log_dir / "voiceconv.log").write_text("log line\n", encoding="utf-8")
+    state.log_dir = log_dir
+    vm = SettingsViewModel(state)
+
+    out = tmp_path / "bundle.zip"
+    succeeded: list[str] = []
+    vm.export_succeeded.connect(succeeded.append)
+    vm.export_diagnostics(str(out))
+    _pump()
+
+    assert out.exists()
+    assert succeeded == [str(out)]
+    with zipfile.ZipFile(out) as zf:
+        names = zf.namelist()
+    assert "logs/voiceconv.log" in names
+    manifest = json.loads(zipfile.ZipFile(out).read("manifest.json"))
+    assert manifest["settings"]["active_engine"] == state.settings.active_engine
+
+
+def test_export_diagnostics_empty_path_is_noop(qapp, tmp_path):
+    state, _ = _make_state(tmp_path)
+    vm = SettingsViewModel(state)
+    succeeded: list[str] = []
+    errors: list[str] = []
+    vm.export_succeeded.connect(succeeded.append)
+    vm.error.connect(errors.append)
+
+    vm.export_diagnostics("")
+    _pump()
+
+    assert not succeeded
+    assert not errors
+
+
+def test_export_diagnostics_error_emits(qapp, tmp_path):
+    state, _ = _make_state(tmp_path)
+    state.log_dir = tmp_path / "logs"
+    (tmp_path / "logs").mkdir()
+    vm = SettingsViewModel(state)
+
+    errors: list[str] = []
+    vm.error.connect(errors.append)
+    # A directory path can't be written as a zip file → triggers the error path.
+    bad_target = tmp_path / "adir"
+    bad_target.mkdir()
+    vm.export_diagnostics(str(bad_target))
+    _pump()
+
+    assert errors
