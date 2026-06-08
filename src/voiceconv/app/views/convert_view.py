@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
 )
 
 from voiceconv.app._app_state import AppState
+from voiceconv.app._guidance import CONVERT_REMINDER
 from voiceconv.app.view_models.convert_vm import ConvertViewModel
 from voiceconv.storage.profile import VoiceProfile
 
@@ -101,6 +102,13 @@ class ConvertView(QWidget):
         self._status_label.setWordWrap(True)
         self._status_label.setAccessibleName("Conversion status")
         form.addRow("", self._status_label)
+
+        # Contextual acceptable-use reminder
+        self._guidance_label = QLabel(CONVERT_REMINDER)
+        self._guidance_label.setWordWrap(True)
+        self._guidance_label.setStyleSheet("color: #555;")
+        self._guidance_label.setAccessibleName("Acceptable-use reminder")
+        form.addRow(self._guidance_label)
 
     def _connect_vm(self) -> None:
         self._vm.output_path_changed.connect(self._on_output_path_changed)

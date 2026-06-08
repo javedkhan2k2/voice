@@ -30,17 +30,23 @@ and docs/phases/phase-2-queue-and-management.md before starting.
   copy; docs/provenance.md — 11 tests
 - Fixed: flaky QThread abort in test_profile_vm (ProfileViewModel now binds
   worker.finished to a method, not a lambda → result handled on main thread)
-- Total: 221/221 tests passing
+- Phase 3 M3 complete: Acceptable-use guidance — app/_guidance.py (single
+  source of reviewed copy), contextual reminders on Create Profile + Convert,
+  re-viewable terms in Settings, AppSettings.acceptable_use_acknowledged_version
+  recorded on first-run ack; copy-guard tests; docs/acceptable-use.md — 7 tests
+- Total: 228/228 tests passing
 - Dev env: Python 3.13.5, .venv/, numpy 2.4.6, pytest 9.0.3, PySide6 installed
 - Run tests: .venv\Scripts\python -m pytest -v
 - Run app:   $env:PYTHONPATH = "src"; .venv\Scripts\python -m voiceconv
 
-## Next: Phase 3 M3 — Acceptable-use guidance
-See docs/phases/phase-3-safeguards-and-provenance.md. First-run acceptable-use
-acknowledgement is recorded (Phase 1 first-run gate) — review/finalize it; add
-contextual in-product guidance; review copy for clarity and non-misuse
-positioning (no impersonation framing). Then M4 (watermark eval + decision),
-M5 (offline hardening). Manual a11y audit (docs/accessibility.md) still open.
+## Next: Phase 3 M4 — Watermark evaluation + decision
+See docs/phases/phase-3-safeguards-and-provenance.md. Spike an inaudible audio
+watermark: measure robustness (survives re-encode/trim/resample) vs audio-quality
+cost, then DECIDE ship-in-v1 or defer-as-fast-follow, documented with evidence.
+This is an evaluation milestone (likely a written spike report + maybe a
+prototype), not necessarily shipped product code. Metadata provenance (M2) is the
+guaranteed baseline regardless. Then M5 (offline hardening). Manual a11y audit
+(docs/accessibility.md) still open from Phase 2.
 
 ## Key APIs
 
@@ -64,8 +70,9 @@ M5 (offline hardening). Manual a11y audit (docs/accessibility.md) still open.
 
 ### Storage
 - storage/settings.py: AppSettings (device, output_format, output_dir, log_dir,
-  first_run_acknowledged, loudness_normalize, log_level, active_engine),
-  SettingsStore — atomic save/load, forward/back compat
+  first_run_acknowledged, loudness_normalize, log_level, active_engine,
+  acceptable_use_acknowledged_version), SettingsStore — atomic save/load,
+  forward/back compat
 - storage/profile.py: VoiceProfile (frozen, artifacts base64-embedded in JSON),
   JsonFileProfileRepository — save/load/list_all/delete
   - ConsentRecord (frozen, versioned): record_id, statement, affirmed_at,
@@ -88,6 +95,9 @@ M5 (offline hardening). Manual a11y audit (docs/accessibility.md) still open.
   engine, queue, runner, engine_lock, log_dir)
   - log_dir = data_dir/"logs" (set in main.py); used by SettingsViewModel.export_diagnostics()
 - app/_queue_bridge.py: QueueBridge(QObject) — runner thread → Qt signals
+- app/_guidance.py: ACCEPTABLE_USE(+_VERSION), PROFILE_REMINDER, CONVERT_REMINDER
+  — single source of safeguard copy (first-run dialog, Settings re-view, tab
+  reminders). Copy guarded by tests/app/test_guidance.py. Doc: docs/acceptable-use.md
 - app/main.py: _LockedQueueRunner; runner started after engine.warmup(); bridge → MainWindow
 
 ### Engine conflict (M2)
@@ -100,22 +110,26 @@ M5 (offline hardening). Manual a11y audit (docs/accessibility.md) still open.
   output provenance; GUI never imports models/audio backends directly;
   all heavy work off UI thread.
 
-## Task: Phase 3, Milestone M3 — Acceptable-use guidance
+## Task: Phase 3, Milestone M4 — Watermark evaluation + decision
 See docs/phases/phase-3-safeguards-and-provenance.md for full scope.
 
-M3 scope:
-- First-run acceptable-use acknowledgement is required and recorded (the Phase 1
-  first-run gate already exists: FirstRunViewModel/FirstRunDialog,
-  AppSettings.first_run_acknowledged). Review/finalize wording and recording.
-- Add contextual in-product guidance (e.g. near profile creation / convert):
-  clear, non-marketing language; no positioning for impersonation.
-- Copy review for clarity and non-misuse framing (acceptance: reviewed copy).
-- Likely UI + settings only; keep headless-testable bits in view-models.
+M4 scope (evaluation milestone — evidence + decision, not necessarily shipped):
+- Spike an inaudible audio watermark approach (e.g. spread-spectrum / echo-hiding
+  on the float32 PCM before encode, or an existing lib if license-compatible).
+- Measure ROBUSTNESS: does the mark survive re-encode (WAV→FLAC→MP3), trim, and
+  resample? And QUALITY COST: listening check + an objective metric (e.g. PESQ/
+  SNR) for audibility.
+- DECIDE: ship in v1 or defer as a named fast-follow. Document with the measured
+  evidence. Metadata provenance (M2) is the guaranteed baseline either way.
+- Output: a written spike report under docs/ (e.g. docs/watermark-eval.md) and,
+  if shipping, a prototype behind the encoder. Keep offline invariant.
 
-Done in M1/M2: consent schema + load enforcement (docs/consent.md); output
-provenance marker in WAV/FLAC via both encoders (docs/provenance.md).
+Done in M1/M2/M3: consent schema + load enforcement (docs/consent.md); output
+provenance marker WAV/FLAC (docs/provenance.md); acceptable-use guidance +
+app/_guidance.py + recorded ack version (docs/acceptable-use.md).
 
-Remaining Phase 3 after M3: M4 watermark eval + decision, M5 offline hardening.
+Remaining Phase 3 after M4: M5 offline-invariant hardening (assert no socket
+opens during conversion; surface offline status in UI; "verify offline" check).
 
 ## Architecture constraints (carry forward)
 - GUI never imports models/audio backends directly; all heavy work off UI thread.

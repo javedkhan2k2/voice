@@ -43,3 +43,15 @@ def test_needs_first_run_false_after_ack(qapp, store):
 
     vm.set_acknowledged(True)
     assert vm.needs_first_run is False
+
+
+def test_acknowledge_records_terms_version(qapp, store):
+    from voiceconv.app._guidance import ACCEPTABLE_USE_VERSION
+    from voiceconv.app.view_models.first_run_vm import FirstRunViewModel
+
+    settings = AppSettings()
+    vm = FirstRunViewModel(settings, store)
+    vm.set_acknowledged(True)
+
+    reloaded = store.load()
+    assert reloaded.acceptable_use_acknowledged_version == ACCEPTABLE_USE_VERSION

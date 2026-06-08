@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from PySide6.QtCore import QObject, Signal
 
+from voiceconv.app._guidance import ACCEPTABLE_USE_VERSION
 from voiceconv.platform_support.device import detect_device
 from voiceconv.storage.settings import AppSettings, SettingsStore
 
@@ -35,6 +36,9 @@ class FirstRunViewModel(QObject):
             return
         self._acknowledged = value
         self._settings.first_run_acknowledged = value
+        if value:
+            # Record which version of the terms the user accepted (audit).
+            self._settings.acceptable_use_acknowledged_version = ACCEPTABLE_USE_VERSION
         self._settings_store.save(self._settings)
         self.acknowledged_changed.emit(value)
 
