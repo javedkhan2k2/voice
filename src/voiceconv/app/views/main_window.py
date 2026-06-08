@@ -62,12 +62,13 @@ class MainWindow(QMainWindow):
         self._tabs.addTab(self._settings_view, "Settings")
         self.setCentralWidget(self._tabs)
 
-        # Status bar — device info shown once at startup
+        # Status bar — device info + offline indicator shown at startup
         info = detect_device()
         if info["device"] == "cuda":
             status_text = f"GPU: {info['note']}  ({info['vram_mb']} MB VRAM)"
         else:
             status_text = f"Device: CPU — {info['note']}"
+        status_text += "   •   Offline — no network used"
         self.statusBar().showMessage(status_text)
 
         # Tab focus hooks
