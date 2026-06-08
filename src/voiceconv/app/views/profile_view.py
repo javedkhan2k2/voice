@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from voiceconv.app._guidance import PROFILE_REMINDER
 from voiceconv.app.view_models.profile_vm import ProfileViewModel
 
 _AUDIO_FILTER = "Audio files (*.wav *.flac *.mp3 *.ogg *.m4a);;All files (*)"
@@ -29,6 +30,13 @@ class ProfileView(QWidget):
     def _build_ui(self) -> None:
         form = QFormLayout(self)
         form.setSpacing(10)
+
+        # Contextual acceptable-use reminder
+        self._guidance_label = QLabel(PROFILE_REMINDER)
+        self._guidance_label.setWordWrap(True)
+        self._guidance_label.setStyleSheet("color: #555;")
+        self._guidance_label.setAccessibleName("Acceptable-use reminder")
+        form.addRow(self._guidance_label)
 
         # Reference file picker
         ref_row = QWidget()

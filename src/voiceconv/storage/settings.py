@@ -27,6 +27,7 @@ class AppSettings:
     loudness_normalize: bool = True       # normalise output via ConvertParams.extra
     log_level: str = "INFO"              # "DEBUG" | "INFO" | "WARNING" | "ERROR"
     active_engine: str = "mock"          # "mock" | "openvoice-v2" | "freevc" (restart)
+    acceptable_use_acknowledged_version: str = ""  # version of terms accepted
     schema_version: int = SCHEMA_VERSION
 
 

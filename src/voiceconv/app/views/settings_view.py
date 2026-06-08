@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from voiceconv.app._guidance import ACCEPTABLE_USE
 from voiceconv.app.view_models.settings_vm import SettingsViewModel
 
 _DEVICES = ["auto", "cuda", "cpu"]
@@ -119,6 +120,17 @@ class SettingsView(QWidget):
         diag_form.addRow("Support bundle:", self._export_btn)
 
         root.addWidget(diag_box)
+
+        # ── Acceptable use ───────────────────────────────────────────────
+        use_box = QGroupBox("Acceptable use")
+        use_layout = QVBoxLayout(use_box)
+        use_layout.setSpacing(8)
+        self._review_use_btn = QPushButton("Review acceptable-use terms…")
+        self._review_use_btn.setAccessibleName("Review acceptable-use terms")
+        self._review_use_btn.clicked.connect(self._show_acceptable_use)
+        use_layout.addWidget(self._review_use_btn)
+        root.addWidget(use_box)
+
         root.addStretch()
 
     def _connect_vm(self) -> None:
@@ -184,6 +196,9 @@ class SettingsView(QWidget):
         QMessageBox.information(
             self, "Diagnostics", f"Diagnostics bundle saved to:\n{path}"
         )
+
+    def _show_acceptable_use(self) -> None:
+        QMessageBox.information(self, "Acceptable use", ACCEPTABLE_USE)
 
     def _on_error(self, msg: str) -> None:
         QMessageBox.warning(self, "Settings", msg)

@@ -12,17 +12,8 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
+from voiceconv.app._guidance import ACCEPTABLE_USE
 from voiceconv.app.view_models.first_run_vm import FirstRunViewModel
-
-_ACCEPTABLE_USE = (
-    "VoiceBuilder converts speech audio into a target speaker's voice.\n\n"
-    "Before using this tool you must confirm:\n"
-    "  • You own, or have explicit permission to use, any voice you create a profile from.\n"
-    "  • You will not use generated audio to impersonate, deceive, or defraud anyone.\n"
-    "  • You accept full responsibility for any use of the generated output.\n\n"
-    "All processing is performed locally on your machine. "
-    "No audio or voice data leaves your device."
-)
 
 
 class FirstRunDialog(QDialog):
@@ -55,7 +46,7 @@ class FirstRunDialog(QDialog):
         layout.addWidget(QLabel("─" * 60))
 
         # Acceptable-use statement
-        use_label = QLabel(_ACCEPTABLE_USE)
+        use_label = QLabel(ACCEPTABLE_USE)
         use_label.setWordWrap(True)
         use_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
         layout.addWidget(use_label)
