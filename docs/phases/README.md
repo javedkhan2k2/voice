@@ -32,7 +32,8 @@ Each phase assumes the previous phase's **exit criteria** are met.
 | 3 / M1 | [phase-3-safeguards-and-provenance.md](phase-3-safeguards-and-provenance.md) | Consent-record finalization: versioned schema (timestamp, statement, profile_id, app_version) bound to its profile; `voiceconv.__version__`; load-time enforcement (no profile without consent); `docs/consent.md`; 9 tests | **Complete** (2026-06-08) |
 | 3 / M2 | [phase-3-safeguards-and-provenance.md](phase-3-safeguards-and-provenance.md) | Output provenance metadata: `audio/_provenance.py` marker embedded in WAV (RIFF INFO) + FLAC (Vorbis) via both encoders; survives export copy; `file_has_provenance()` verifier; `docs/provenance.md`; 11 tests | **Complete** (2026-06-08) |
 | 3 / M3 | [phase-3-safeguards-and-provenance.md](phase-3-safeguards-and-provenance.md) | Acceptable-use guidance: centralized reviewed copy (`app/_guidance.py`), contextual reminders on Create Profile + Convert, re-viewable terms in Settings, acknowledged-version recorded; copy-guard tests; `docs/acceptable-use.md`; 7 tests | **Complete** (2026-06-08) |
-| 3 / M4–M5 | [phase-3-safeguards-and-provenance.md](phase-3-safeguards-and-provenance.md) | Watermark evaluation + decision, offline-invariant hardening | Not started |
+| 3 / M4 | [phase-3-safeguards-and-provenance.md](phase-3-safeguards-and-provenance.md) | Watermark evaluation: spread-spectrum spike (`audio/_watermark.py`, experimental) + measurement harness; survives lossless/MP3 but fails trim/resample → **decision: DEFER to fast-follow**, metadata provenance ships as baseline; `docs/watermark-eval.md`; 7 tests | **Complete** (2026-06-08) |
+| 3 / M5 | [phase-3-safeguards-and-provenance.md](phase-3-safeguards-and-provenance.md) | Offline-invariant hardening | Not started |
 | 4 | [phase-4-packaging-and-beta.md](phase-4-packaging-and-beta.md) | Embedded-Python bundle, install-time weight fetch, Inno Setup installer, hardening, clean-VM beta | Not started |
 
 ## Cross-phase decisions to resolve
@@ -41,7 +42,7 @@ These span multiple phases; resolving them early avoids rework.
 
 - **App's own license (open-source vs proprietary)** — gates the seed-VC reconsideration (Phase 0), legal
   copy review (Phase 3), and the dependency license audit + code-signing (Phase 4).
-- **Provenance depth (metadata-only vs +inaudible watermark)** — opened in spec, decided in Phase 3 (M4),
-  consumed by Phase 4.
+- **Provenance depth (metadata-only vs +inaudible watermark)** — opened in spec, **decided in Phase 3 M4:
+  metadata-only for v1; inaudible watermark deferred to a fast-follow** (see `docs/watermark-eval.md`).
 - **Default engine confirmation** — provisional (OpenVoice V2); settled by the Phase 1 (M1) listening-test
   A/B against FreeVC.

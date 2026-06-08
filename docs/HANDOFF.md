@@ -34,19 +34,23 @@ and docs/phases/phase-2-queue-and-management.md before starting.
   source of reviewed copy), contextual reminders on Create Profile + Convert,
   re-viewable terms in Settings, AppSettings.acceptable_use_acknowledged_version
   recorded on first-run ack; copy-guard tests; docs/acceptable-use.md — 7 tests
-- Total: 228/228 tests passing
+- Phase 3 M4 complete: Watermark evaluation — experimental spread-spectrum
+  spike (audio/_watermark.py, NOT wired to production) + scripts/watermark_eval.py;
+  measured: survives lossless+MP3, fails trim/resample, ~28 dB SNR →
+  DECISION: defer watermark to fast-follow, metadata provenance is v1 baseline;
+  docs/watermark-eval.md — 7 tests
+- Total: 235/235 tests passing
 - Dev env: Python 3.13.5, .venv/, numpy 2.4.6, pytest 9.0.3, PySide6 installed
 - Run tests: .venv\Scripts\python -m pytest -v
 - Run app:   $env:PYTHONPATH = "src"; .venv\Scripts\python -m voiceconv
 
-## Next: Phase 3 M4 — Watermark evaluation + decision
-See docs/phases/phase-3-safeguards-and-provenance.md. Spike an inaudible audio
-watermark: measure robustness (survives re-encode/trim/resample) vs audio-quality
-cost, then DECIDE ship-in-v1 or defer-as-fast-follow, documented with evidence.
-This is an evaluation milestone (likely a written spike report + maybe a
-prototype), not necessarily shipped product code. Metadata provenance (M2) is the
-guaranteed baseline regardless. Then M5 (offline hardening). Manual a11y audit
-(docs/accessibility.md) still open from Phase 2.
+## Next: Phase 3 M5 — Offline-invariant hardening (last Phase 3 milestone)
+See docs/phases/phase-3-safeguards-and-provenance.md. Strengthen the no-network
+guarantee at the socket layer (not just config): assert zero outbound
+connections during a conversion; surface offline status in the UI; provide a
+"verify offline" self-check. services/offline_check.py already has
+check_offline_invariant() (Phase 1 M6) — extend it. Then Phase 3 is complete.
+Manual a11y audit (docs/accessibility.md) still open from Phase 2.
 
 ## Key APIs
 
@@ -67,6 +71,9 @@ guaranteed baseline regardless. Then M5 (offline hardening). Manual a11y audit
   file_has_provenance(path). Both encoders embed the marker; export = byte copy
   so it survives. Metadata-layer only (stripped by re-encode → watermark = M4).
   Schema doc: docs/provenance.md
+- audio/_watermark.py: EXPERIMENTAL spread-spectrum watermark (embed/
+  correlation_score/is_watermarked/snr_db). NOT wired to production. Evaluated
+  in M4 and DEFERRED — see docs/watermark-eval.md + scripts/watermark_eval.py
 
 ### Storage
 - storage/settings.py: AppSettings (device, output_format, output_dir, log_dir,
@@ -110,26 +117,26 @@ guaranteed baseline regardless. Then M5 (offline hardening). Manual a11y audit
   output provenance; GUI never imports models/audio backends directly;
   all heavy work off UI thread.
 
-## Task: Phase 3, Milestone M4 — Watermark evaluation + decision
+## Task: Phase 3, Milestone M5 — Offline-invariant hardening (closes Phase 3)
 See docs/phases/phase-3-safeguards-and-provenance.md for full scope.
 
-M4 scope (evaluation milestone — evidence + decision, not necessarily shipped):
-- Spike an inaudible audio watermark approach (e.g. spread-spectrum / echo-hiding
-  on the float32 PCM before encode, or an existing lib if license-compatible).
-- Measure ROBUSTNESS: does the mark survive re-encode (WAV→FLAC→MP3), trim, and
-  resample? And QUALITY COST: listening check + an objective metric (e.g. PESQ/
-  SNR) for audibility.
-- DECIDE: ship in v1 or defer as a named fast-follow. Document with the measured
-  evidence. Metadata provenance (M2) is the guaranteed baseline either way.
-- Output: a written spike report under docs/ (e.g. docs/watermark-eval.md) and,
-  if shipping, a prototype behind the encoder. Keep offline invariant.
+M5 scope:
+- Assert at the SOCKET layer that no outbound network connection opens during a
+  conversion (not just config). Likely a test that monkeypatches/guards
+  socket.socket.connect (or installs a deny-guard) around a mock-engine
+  convert_file run and asserts zero attempts.
+- Surface offline status in the UI (e.g. a status-bar/Settings indicator that the
+  app runs fully offline; optionally a "Verify offline" self-check button).
+- Extend services/offline_check.py (check_offline_invariant from Phase 1 M6) —
+  read it first; build on it rather than duplicating.
+- Keep it headless-testable; no real network calls in tests.
 
-Done in M1/M2/M3: consent schema + load enforcement (docs/consent.md); output
-provenance marker WAV/FLAC (docs/provenance.md); acceptable-use guidance +
-app/_guidance.py + recorded ack version (docs/acceptable-use.md).
+Done in M1–M4: consent schema + enforcement (docs/consent.md); output provenance
+metadata (docs/provenance.md); acceptable-use guidance (docs/acceptable-use.md);
+watermark evaluated + DEFERRED (docs/watermark-eval.md).
 
-Remaining Phase 3 after M4: M5 offline-invariant hardening (assert no socket
-opens during conversion; surface offline status in UI; "verify offline" check).
+After M5: Phase 3 complete → Phase 4 (packaging & beta). Manual a11y audit
+(docs/accessibility.md) still open from Phase 2.
 
 ## Architecture constraints (carry forward)
 - GUI never imports models/audio backends directly; all heavy work off UI thread.
