@@ -190,6 +190,21 @@ def test_export_diagnostics_empty_path_is_noop(qapp, tmp_path):
     assert not errors
 
 
+def test_verify_offline_emits_signal(qapp, tmp_path):
+    state, _ = _make_state(tmp_path)
+    vm = SettingsViewModel(state)
+
+    results: list[tuple[bool, str]] = []
+    vm.offline_verified.connect(lambda ok, detail: results.append((ok, detail)))
+    vm.verify_offline()
+    _pump()
+
+    assert results
+    ok, detail = results[0]
+    assert ok is True
+    assert detail
+
+
 def test_export_diagnostics_error_emits(qapp, tmp_path):
     state, _ = _make_state(tmp_path)
     state.log_dir = tmp_path / "logs"

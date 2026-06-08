@@ -39,18 +39,24 @@ and docs/phases/phase-2-queue-and-management.md before starting.
   measured: survives lossless+MP3, fails trim/resample, ~28 dB SNR →
   DECISION: defer watermark to fast-follow, metadata provenance is v1 baseline;
   docs/watermark-eval.md — 7 tests
-- Total: 235/235 tests passing
+- Phase 3 M5 complete: Offline-invariant hardening — block_network() context
+  manager + verify_offline() self-check in services/offline_check.py; status-bar
+  offline indicator; Settings "Verify offline" button (SettingsViewModel.
+  verify_offline → offline_verified signal); docs/offline.md — 4 tests
+- Phase 3 COMPLETE (M1–M5).
+- Total: 239/239 tests passing
 - Dev env: Python 3.13.5, .venv/, numpy 2.4.6, pytest 9.0.3, PySide6 installed
 - Run tests: .venv\Scripts\python -m pytest -v
 - Run app:   $env:PYTHONPATH = "src"; .venv\Scripts\python -m voiceconv
 
-## Next: Phase 3 M5 — Offline-invariant hardening (last Phase 3 milestone)
-See docs/phases/phase-3-safeguards-and-provenance.md. Strengthen the no-network
-guarantee at the socket layer (not just config): assert zero outbound
-connections during a conversion; surface offline status in the UI; provide a
-"verify offline" self-check. services/offline_check.py already has
-check_offline_invariant() (Phase 1 M6) — extend it. Then Phase 3 is complete.
-Manual a11y audit (docs/accessibility.md) still open from Phase 2.
+## Next: Phase 4 — Packaging & beta
+See docs/phases/phase-4-packaging-and-beta.md. Focus: embedded-CPython bundle,
+install-time model-weight fetch, Inno Setup installer, hardening, clean-VM beta.
+Read the phase doc and break into milestones; start in PLAN MODE.
+Still open from earlier phases:
+- Manual a11y audit log (docs/accessibility.md) to formally close Phase 2.
+- External/legal review of acceptable-use + consent copy before GA (Phase 4).
+- Watermark fast-follow (docs/watermark-eval.md) — post-v1.
 
 ## Key APIs
 
@@ -59,6 +65,9 @@ Manual a11y audit (docs/accessibility.md) still open from Phase 2.
 - services/queue.py: JobQueue — thread-safe
 - services/runner.py: QueueRunner — submit/cancel/retry; callbacks fire from background thread
 - services/converter.py: Converter — single-shot
+- services/offline_check.py: block_network() ctx mgr, check_offline_invariant(fn),
+  verify_offline() → OfflineCheckResult(ok, detail). Socket-layer guard (main
+  process only; subprocesses excluded). Doc: docs/offline.md
 - services/diagnostics.py: collect_app_info() → env/hardware dict;
   build_bundle(output_zip_path, log_dir, app_info) → ZIP (manifest.json +
   logs/voiceconv.log*); audio excluded by name whitelist + extension denylist
@@ -117,26 +126,23 @@ Manual a11y audit (docs/accessibility.md) still open from Phase 2.
   output provenance; GUI never imports models/audio backends directly;
   all heavy work off UI thread.
 
-## Task: Phase 3, Milestone M5 — Offline-invariant hardening (closes Phase 3)
-See docs/phases/phase-3-safeguards-and-provenance.md for full scope.
+## Task: Phase 4 — Packaging & beta (read the phase doc, break into milestones)
+See docs/phases/phase-4-packaging-and-beta.md for full scope.
 
-M5 scope:
-- Assert at the SOCKET layer that no outbound network connection opens during a
-  conversion (not just config). Likely a test that monkeypatches/guards
-  socket.socket.connect (or installs a deny-guard) around a mock-engine
-  convert_file run and asserts zero attempts.
-- Surface offline status in the UI (e.g. a status-bar/Settings indicator that the
-  app runs fully offline; optionally a "Verify offline" self-check button).
-- Extend services/offline_check.py (check_offline_invariant from Phase 1 M6) —
-  read it first; build on it rather than duplicating.
-- Keep it headless-testable; no real network calls in tests.
+Phase 4 themes:
+- Embedded CPython bundle (app runs without a system Python).
+- Install-time model-weight fetch (the ONLY allowed network use; runtime stays
+  offline — keep the conversion-path invariant intact).
+- Inno Setup installer; finalize ffmpeg bundling (CLAUDE.md TODO).
+- Hardening + clean-VM beta; dependency license audit; code signing.
 
-Done in M1–M4: consent schema + enforcement (docs/consent.md); output provenance
-metadata (docs/provenance.md); acceptable-use guidance (docs/acceptable-use.md);
-watermark evaluated + DEFERRED (docs/watermark-eval.md).
+Phase 3 is COMPLETE. Safeguards in place: consent schema + enforcement
+(docs/consent.md); output provenance metadata (docs/provenance.md); acceptable-
+use guidance (docs/acceptable-use.md); watermark evaluated + DEFERRED
+(docs/watermark-eval.md); offline invariant hardened (docs/offline.md).
 
-After M5: Phase 3 complete → Phase 4 (packaging & beta). Manual a11y audit
-(docs/accessibility.md) still open from Phase 2.
+Cross-phase open items to resolve in Phase 4: app license (gates seed-VC
+reconsideration + signing), external/legal copy review, the manual a11y audit.
 
 ## Architecture constraints (carry forward)
 - GUI never imports models/audio backends directly; all heavy work off UI thread.

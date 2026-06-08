@@ -15,7 +15,11 @@ from voiceconv.audio._codec import FfmpegEncoder, FfmpegLoader
 from voiceconv.inference.engine import ConvertParams
 from voiceconv.inference.worker_adapter import WorkerAdapter
 from voiceconv.services.converter import Converter
-from voiceconv.services.offline_check import check_offline_invariant
+from voiceconv.services.offline_check import (
+    block_network,
+    check_offline_invariant,
+    verify_offline,
+)
 
 
 @needs_ffmpeg
@@ -48,3 +52,30 @@ def test_check_offline_invariant_catches_socket_usage():
 
     with pytest.raises(AssertionError, match="offline invariant violated"):
         check_offline_invariant(_open_socket)
+
+
+def test_block_network_context_manager_blocks_and_restores():
+    import socket
+
+    with block_network():
+        with pytest.raises(AssertionError, match="offline invariant violated"):
+            socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    # Guard removed after the block — socket creation works again.
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.close()
+
+
+def test_verify_offline_reports_ok():
+    result = verify_offline()
+    assert result.ok is True
+    assert "no network" in result.detail.lower() or "device" in result.detail.lower()
+
+
+def test_verify_offline_leaves_sockets_usable_afterwards():
+    import socket
+
+    verify_offline()
+    # The self-check must restore normal socket behaviour.
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.close()

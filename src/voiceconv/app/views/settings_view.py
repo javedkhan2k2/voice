@@ -121,6 +121,23 @@ class SettingsView(QWidget):
 
         root.addWidget(diag_box)
 
+        # ── Privacy / Offline ────────────────────────────────────────────
+        offline_box = QGroupBox("Privacy")
+        offline_layout = QVBoxLayout(offline_box)
+        offline_layout.setSpacing(8)
+        offline_note = QLabel(
+            "All processing runs locally. The conversion path opens no network "
+            "connections; no audio or voice data leaves this device."
+        )
+        offline_note.setWordWrap(True)
+        offline_note.setAccessibleName("Offline guarantee")
+        offline_layout.addWidget(offline_note)
+        self._verify_offline_btn = QPushButton("Verify offline")
+        self._verify_offline_btn.setAccessibleName("Verify offline self-check")
+        self._verify_offline_btn.clicked.connect(self._vm.verify_offline)
+        offline_layout.addWidget(self._verify_offline_btn)
+        root.addWidget(offline_box)
+
         # ── Acceptable use ───────────────────────────────────────────────
         use_box = QGroupBox("Acceptable use")
         use_layout = QVBoxLayout(use_box)
@@ -149,6 +166,7 @@ class SettingsView(QWidget):
         self._vm.error.connect(self._on_error)
         self._vm.settings_changed.connect(self._load_current)
         self._vm.export_succeeded.connect(self._on_export_succeeded)
+        self._vm.offline_verified.connect(self._on_offline_verified)
 
     def _load_current(self) -> None:
         """Populate controls from current vm state without triggering saves."""
@@ -199,6 +217,12 @@ class SettingsView(QWidget):
 
     def _show_acceptable_use(self) -> None:
         QMessageBox.information(self, "Acceptable use", ACCEPTABLE_USE)
+
+    def _on_offline_verified(self, ok: bool, detail: str) -> None:
+        if ok:
+            QMessageBox.information(self, "Offline check", detail)
+        else:
+            QMessageBox.warning(self, "Offline check", detail)
 
     def _on_error(self, msg: str) -> None:
         QMessageBox.warning(self, "Settings", msg)

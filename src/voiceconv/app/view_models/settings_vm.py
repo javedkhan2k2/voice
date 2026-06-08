@@ -10,6 +10,7 @@ from PySide6.QtCore import QObject, Signal
 from voiceconv.app._app_state import AppState
 from voiceconv.services import diagnostics
 from voiceconv.services.job import JobStatus
+from voiceconv.services.offline_check import verify_offline
 
 log = logging.getLogger(__name__)
 
@@ -20,6 +21,7 @@ class SettingsViewModel(QObject):
     settings_changed = Signal()
     error = Signal(str)
     export_succeeded = Signal(str)  # absolute path of the written bundle
+    offline_verified = Signal(bool, str)  # (ok, detail) from verify_offline()
 
     def __init__(self, state: AppState, parent: QObject | None = None) -> None:
         super().__init__(parent)
@@ -115,6 +117,12 @@ class SettingsViewModel(QObject):
             return
         log.info("diagnostics bundle written to %s", written)
         self.export_succeeded.emit(str(written))
+
+    def verify_offline(self) -> None:
+        """Run the offline self-check and emit :attr:`offline_verified`."""
+        result = verify_offline()
+        log.info("offline self-check: ok=%s (%s)", result.ok, result.detail)
+        self.offline_verified.emit(result.ok, result.detail)
 
     # ------------------------------------------------------------------
     # Internal
