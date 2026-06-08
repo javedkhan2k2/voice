@@ -7,11 +7,14 @@ The runner accepts an injected AudioEncoder so the output backend is swappable:
 
 from __future__ import annotations
 
+import io
 import wave
 from pathlib import Path
 from typing import Protocol
 
 import numpy as np
+
+from voiceconv.audio._provenance import append_info_chunk
 
 
 class AudioEncoder(Protocol):
@@ -31,8 +34,12 @@ class StdlibWavEncoder:
         Path(path).parent.mkdir(parents=True, exist_ok=True)
         clipped = np.clip(pcm, -1.0, 1.0)
         int16 = (clipped * 32767.0).astype(np.int16)
-        with wave.open(path, "wb") as wf:
+        buf = io.BytesIO()
+        with wave.open(buf, "wb") as wf:
             wf.setnchannels(1)
             wf.setsampwidth(2)
             wf.setframerate(sample_rate)
             wf.writeframes(int16.tobytes())
+        # Output provenance: append a RIFF INFO chunk marking the file as AI
+        # voice-converted (M2). Audio frames are unchanged.
+        Path(path).write_bytes(append_info_chunk(buf.getvalue()))

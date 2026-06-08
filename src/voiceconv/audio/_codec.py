@@ -15,6 +15,7 @@ from typing import Optional
 
 import numpy as np
 
+from voiceconv.audio._provenance import ffmpeg_metadata_args
 from voiceconv.platform_support.ffmpeg import get_ffmpeg_path
 
 
@@ -84,6 +85,8 @@ class FfmpegEncoder:
             self._ffmpeg, "-v", "error", "-y",
             "-f", "f32le", "-ar", str(sample_rate), "-ac", "1",
             "-i", "pipe:0",
+            # Output provenance: mark the file as AI voice-converted (M2).
+            *ffmpeg_metadata_args(),
             path,
         ]
         subprocess.run(
