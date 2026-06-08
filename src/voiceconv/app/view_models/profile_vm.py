@@ -85,7 +85,11 @@ class ProfileViewModel(QObject):
         worker.moveToThread(thread)
 
         thread.started.connect(worker.run)
-        worker.finished.connect(lambda arts: self._on_prepared(arts))
+        # Bind to the method (not a lambda) so Qt gives the slot a receiver
+        # context and uses a queued connection — _on_prepared then runs on the
+        # main thread, not the worker thread. A bare lambda has no receiver and
+        # would run directly on the worker thread, racing thread teardown.
+        worker.finished.connect(self._on_prepared)
         worker.error.connect(self._on_error)
         worker.finished.connect(thread.quit)
         worker.error.connect(thread.quit)

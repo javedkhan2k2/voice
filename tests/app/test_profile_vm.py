@@ -47,6 +47,28 @@ def _process_events():
         QCoreApplication.processEvents()
 
 
+def _wait_for(vm, predicate, timeout_ms: int = 5000) -> bool:
+    """Pump the Qt event loop until *predicate* is true or the timeout elapses.
+
+    Deterministic teardown: also waits for the background QThread to finish and
+    drains pending events (so deleteLater runs) before returning, so no worker
+    thread is left running across the test boundary.
+    """
+    import time
+
+    deadline = time.monotonic() + timeout_ms / 1000.0
+    while time.monotonic() < deadline:
+        QCoreApplication.processEvents()
+        if predicate():
+            break
+        time.sleep(0.005)
+    thread = vm._thread
+    if thread is not None:
+        thread.wait(timeout_ms)
+    _process_events()  # drain queued slots + deleteLater
+    return predicate()
+
+
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
@@ -123,12 +145,7 @@ def test_create_profile_success_saves_and_emits(qapp, tmp_path):
 
     vm.create_profile()
 
-    # Allow the QThread to finish
-    if vm._thread:
-        vm._thread.wait(3000)
-    _process_events()
-
-    assert len(saved_ids) == 1
+    assert _wait_for(vm, lambda: len(saved_ids) == 1)
     profiles = state.profile_repo.list_all()
     assert any(p.name == "Bob" for p in profiles)
 
@@ -154,9 +171,9 @@ def test_is_busy_flips_during_create(qapp, tmp_path):
     vm.is_busy_changed.connect(busy_states.append)
 
     vm.create_profile()
-    if vm._thread:
-        vm._thread.wait(3000)
-    _process_events()
+    # Wait until busy has flipped back to False (work complete).
+    _wait_for(vm, lambda: busy_states[-1:] == [False])
 
     # Should have seen True then False
-    assert True in busy_states
+    assert busy_states[0] is True
+    assert busy_states[-1] is False
