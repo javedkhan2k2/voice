@@ -86,9 +86,12 @@ class ProfileLibraryView(QWidget):
         self._affirmed_label.setAccessibleName("Consent affirmed date")
         self._affirmed_by_label = QLabel("")
         self._affirmed_by_label.setAccessibleName("Consent affirmed by")
+        self._app_version_label = QLabel("")
+        self._app_version_label.setAccessibleName("Consent app version")
         consent_form.addRow("Statement:", self._statement_label)
         consent_form.addRow("Affirmed:", self._affirmed_label)
         consent_form.addRow("By:", self._affirmed_by_label)
+        consent_form.addRow("App version:", self._app_version_label)
         detail_layout.addWidget(consent_box)
 
         detail_layout.addStretch()
@@ -187,6 +190,7 @@ class ProfileLibraryView(QWidget):
         self._statement_label.setText(profile.consent.statement)
         self._affirmed_label.setText(_fmt_ts(profile.consent.affirmed_at))
         self._affirmed_by_label.setText(profile.consent.affirmed_by)
+        self._app_version_label.setText(profile.consent.app_version or "unknown")
 
     # ------------------------------------------------------------------
     # Actions
