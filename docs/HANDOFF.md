@@ -15,15 +15,22 @@ and docs/phases/phase-2-queue-and-management.md before starting.
 - Phase 2 M5 complete: Diagnostics — services/diagnostics.py
   (collect_app_info + build_bundle), "Export Diagnostics…" in Settings tab,
   AppState.log_dir threaded through main.py — 13 tests
-- Total: 189/189 tests passing
+- Phase 2 M6 complete: Accessibility pass — accessibleName on all view
+  controls (per-row Queue context), Alt mnemonics, AA-contrast status colours,
+  status conveyed by text; docs/accessibility.md checklist — 12 tests
+- Phase 2 COMPLETE (M1–M6). Manual a11y audit log in docs/accessibility.md
+  still to be walked before Phase 2 exit sign-off.
+- Total: 201/201 tests passing
 - Dev env: Python 3.13.5, .venv/, numpy 2.4.6, pytest 9.0.3, PySide6 installed
 - Run tests: .venv\Scripts\python -m pytest -v
 - Run app:   $env:PYTHONPATH = "src"; .venv\Scripts\python -m voiceconv
 
-## Next milestone: Phase 2 M6 — Accessibility pass
-Keyboard navigation, screen-reader labels, high-DPI/contrast, no color-only
-status cues across all Phase 2 views (Queue, Profile Library, Settings).
-Last milestone of Phase 2.
+## Next: Phase 3 — Safeguards & provenance
+See docs/phases/phase-3-safeguards-and-provenance.md. Focus: consent-record
+finalization, output provenance (mark generated audio as AI voice-converted),
+acceptable-use guidance, watermark evaluation, offline hardening.
+Before starting, optionally walk the manual a11y audit log in
+docs/accessibility.md to formally close Phase 2.
 
 ## Key APIs
 
@@ -69,29 +76,28 @@ Last milestone of Phase 2.
   output provenance; GUI never imports models/audio backends directly;
   all heavy work off UI thread.
 
-## Task: Phase 2, Milestone M6 — Accessibility pass
-See docs/phases/phase-2-queue-and-management.md for full scope. Last milestone
-of Phase 2; ships the exit criteria for the phase.
+## Task: Phase 3 — Safeguards & provenance
+See docs/phases/phase-3-safeguards-and-provenance.md for full scope. This is the
+first milestone after Phase 2; read the phase doc and break it into milestones.
 
-M6 scope (across all Phase 2 views — Queue, Profile Library, Settings — and
-re-check the Phase 1 views):
-- Keyboard navigation: logical tab order; every action reachable without a mouse;
-  visible focus indicators; mnemonics/accelerators on buttons.
-- Screen-reader labels: accessibleName/accessibleDescription on inputs, buttons,
-  and status widgets; form labels associated with their fields.
-- High-DPI / contrast: no fixed pixel sizes that break scaling; respect system
-  contrast; verify against a high-contrast theme.
-- No color-only status cues: job status (QUEUED/RUNNING/DONE/CANCELLED/FAILED)
-  and busy states must carry text/icon, not just color.
+Phase 3 themes:
+- Consent-record finalization (schema freeze; what's persisted, how it's shown).
+- Output provenance: mark generated audio as AI voice-converted by this tool
+  (metadata-only vs +inaudible watermark — decision opens here, see README
+  "cross-phase decisions").
+- Acceptable-use guidance / legal copy review.
+- Watermark evaluation.
+- Offline hardening (extend check_offline_invariant coverage).
 
 ## Architecture constraints (carry forward)
 - GUI never imports models/audio backends directly; all heavy work off UI thread.
 - Offline-runtime invariant; consent gate; output provenance; no telemetry.
+- Dual-use tool: keep impersonation/fraud safeguards intact.
 
 ## Notes
-- Create a new branch (e.g., phase-2-m6-accessibility) before starting.
+- Create a new branch per milestone before starting.
+- Phase 2 leftovers: walk the manual a11y audit log in docs/accessibility.md and
+  record results to formally close the Phase 2 exit criteria.
 - Diagnostics (M5) safeguard: the bundle excludes audio via name whitelist
-  (voiceconv.log*) AND extension denylist in services/diagnostics.py — keep both
-  if you touch that module.
-- Start in PLAN MODE: propose a per-view a11y checklist and the test approach
-  (view-model labels are unit-testable; keyboard/SR walkthrough is manual).
+  (voiceconv.log*) AND extension denylist in services/diagnostics.py — keep both.
+- Start in PLAN MODE: propose milestone breakdown + module structure BEFORE code.

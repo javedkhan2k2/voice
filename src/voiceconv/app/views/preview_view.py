@@ -30,17 +30,20 @@ class PreviewView(QWidget):
 
         self._info_label = QLabel("Run a conversion first to enable preview.")
         self._info_label.setWordWrap(True)
+        self._info_label.setAccessibleName("Preview source and output paths")
         layout.addWidget(self._info_label)
 
         # Playback row
         play_row = QWidget()
         play_layout = QHBoxLayout(play_row)
         play_layout.setContentsMargins(0, 0, 0, 0)
-        self._play_src_btn = QPushButton("▶  Play Source")
+        self._play_src_btn = QPushButton("▶  Play &Source")
         self._play_src_btn.setEnabled(False)
+        self._play_src_btn.setAccessibleName("Play source audio")
         self._play_src_btn.clicked.connect(self._vm.play_source)
-        self._play_out_btn = QPushButton("▶  Play Output")
+        self._play_out_btn = QPushButton("▶  Play &Output")
         self._play_out_btn.setEnabled(False)
+        self._play_out_btn.setAccessibleName("Play converted output audio")
         self._play_out_btn.clicked.connect(self._vm.play_output)
         play_layout.addWidget(self._play_src_btn)
         play_layout.addWidget(self._play_out_btn)
@@ -48,8 +51,9 @@ class PreviewView(QWidget):
         layout.addWidget(play_row)
 
         # Export button
-        self._export_btn = QPushButton("Export / Save As…")
+        self._export_btn = QPushButton("&Export / Save As…")
         self._export_btn.setEnabled(False)
+        self._export_btn.setAccessibleName("Export converted audio")
         self._export_btn.clicked.connect(self._on_export)
         layout.addWidget(self._export_btn)
 
